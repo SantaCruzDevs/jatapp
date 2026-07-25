@@ -317,6 +317,12 @@ function openAssignModal() {
     const modal = document.getElementById('modal-assign');
     modal.classList.add('active');
     
+    // Populate the current fare for the selected ride
+    const ride = state.rides.find(r => r.id === state.selectedRideId);
+    if (ride) {
+        document.getElementById('input-assign-fare').value = ride.fare;
+    }
+    
     const container = document.getElementById('drivers-assign-container');
     container.innerHTML = '';
     
@@ -346,6 +352,14 @@ function openAssignModal() {
 function assignDriver(driver) {
     const ride = state.rides.find(r => r.id === state.selectedRideId);
     if (ride) {
+        // Read potentially adjusted fare before assigning
+        const adjustedFare = parseFloat(document.getElementById('input-assign-fare').value) || ride.fare;
+        if (adjustedFare !== ride.fare) {
+            ride.timeline.push({ time: getSimulatedTime(), label: 'Tarifa Modificada', desc: `Monto ajustado de Bs. ${ride.fare} a Bs. ${adjustedFare} por operador.` });
+        }
+        ride.fare = adjustedFare;
+        ride.initialFare = adjustedFare;
+        
         ride.status = 'assigned';
         ride.driver = driver;
         ride.timeline.push({ time: getSimulatedTime(), label: 'Conductor Asignado', desc: `Operador asignó a ${driver.name}` });
