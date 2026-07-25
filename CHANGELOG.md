@@ -62,6 +62,14 @@ All notable changes to this project will be documented in this file.
     - Se cambió el color amarillo neón chillón (`#fdde12`) por un amarillo ámbar cálido y corporativo (`#f5c300` en variables CSS y `#eab308` para textos) para evitar distorsiones visuales y mejorar la legibilidad.
     - Se corrigieron los botones primarios para utilizar texto oscuro (`color: #090c15`) en lugar de blanco sobre fondo amarillo, logrando conformidad con estándares de legibilidad WCAG.
     - Se suavizaron las sombras y resplandores neón a un brillo sutil (`rgba(245, 195, 0, 0.12)`).
+- Implementación de control interactivo Drag & Drop (Arrastrar y Soltar) en el tablero Kanban:
+    - Se dotó a las tarjetas de servicio de atributos nativos de arrastre (`draggable="true"`), atenuando visualmente la tarjeta en estado `dragging`.
+    - Se crearon zonas de drop en cada columna (`container-pending`, `container-assigned`, etc.) con un borde dashed dinámico al pasar la tarjeta encima (`drag-over`).
+    - Lógica de transiciones integrada:
+        - Si se arrastra a **Asignado** o **En Camino** (sin chofer previo), se despliega automáticamente el modal de asignación de motoqueros para resolver la entrega.
+        - Si se arrastra a **Completado**, se abre de forma reactiva el modal de observaciones y selección de método de pago para resguardar la consistencia financiera.
+        - Se conserva el funcionamiento de los botones tradicionales para ofrecer control redundante.
+
 
 
 

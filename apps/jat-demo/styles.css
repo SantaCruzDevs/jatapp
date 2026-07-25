@@ -1550,3 +1550,17 @@ h1, h2, h3, .logo {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* DRAG AND DROP KANBAN BOARD STYLES */
+.ride-card.dragging {
+    opacity: 0.4;
+    border: 1px dashed var(--accent-blue);
+    transform: scale(0.98);
+}
+
+.kanban-cards-container.drag-over {
+    background: rgba(245, 195, 0, 0.05);
+    border: 2px dashed rgba(245, 195, 0, 0.25) !important;
+    border-radius: 12px;
+    transition: var(--transition-smooth);
+}

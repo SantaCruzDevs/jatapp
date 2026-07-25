@@ -75,6 +75,7 @@ window.addEventListener('DOMContentLoaded', () => {
     initNotificationDropdown();
     initReportsNavigation();
     initDriverWalletFilters();
+    initDragAndDrop();
     
     // Initial clock update
     updateClock();
@@ -324,6 +325,7 @@ function renderKanban() {
         
         const card = document.createElement('div');
         card.className = `ride-card`;
+        card.setAttribute('draggable', 'true');
         card.innerHTML = `
             <div class="card-header">
                 <span class="card-company">${ride.company}</span>
@@ -340,6 +342,15 @@ function renderKanban() {
                 </span>
             </div>
         `;
+        
+        card.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', ride.id);
+            card.classList.add('dragging');
+        });
+        
+        card.addEventListener('dragend', () => {
+            card.classList.remove('dragging');
+        });
         
         card.addEventListener('click', () => handleRideCardClick(ride));
         if (containers[ride.status]) {
@@ -1502,5 +1513,75 @@ function renderDriverWallet() {
     
     if (driverRides.length === 0) {
         ridesList.innerHTML = '<div class="text-muted" style="text-align:center; padding:20px;">No registras carreras en este periodo.</div>';
+    }
+}
+
+function initDragAndDrop() {
+    const containers = {
+        pending: document.getElementById('container-pending'),
+        assigned: document.getElementById('container-assigned'),
+        ontheway: document.getElementById('container-ontheway'),
+        completed: document.getElementById('container-completed')
+    };
+    
+    Object.entries(containers).forEach(([status, container]) => {
+        if (!container) return;
+        
+        container.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            container.classList.add('drag-over');
+        });
+        
+        container.addEventListener('dragleave', () => {
+            container.classList.remove('drag-over');
+        });
+        
+        container.addEventListener('drop', (e) => {
+            e.preventDefault();
+            container.classList.remove('drag-over');
+            
+            const rideId = e.dataTransfer.getData('text/plain');
+            const ride = state.rides.find(r => r.id === rideId);
+            if (!ride) return;
+            
+            handleRideStatusTransition(ride, status);
+        });
+    });
+}
+
+function handleRideStatusTransition(ride, targetStatus) {
+    if (ride.status === targetStatus) return;
+    
+    if (targetStatus === 'pending') {
+        ride.status = 'pending';
+        ride.driver = null;
+        ride.timeline.push({ time: getSimulatedTime(), label: 'Servicio Reiniciado', desc: 'Operador restableció el viaje a Pendiente.' });
+        saveStateToStorage();
+        renderAll();
+        showToast('Viaje Restablecido', `El servicio ${ride.id} volvió a Pendiente.`, 'info');
+    } else if (targetStatus === 'assigned') {
+        state.selectedRideId = ride.id;
+        openAssignModal();
+    } else if (targetStatus === 'ontheway') {
+        if (!ride.driver) {
+            state.selectedRideId = ride.id;
+            openAssignModal();
+            showToast('Asignación Requerida', 'Asigne un conductor antes de iniciar el viaje.', 'warning');
+            return;
+        }
+        ride.status = 'ontheway';
+        ride.timeline.push({ time: getSimulatedTime(), label: 'Motoquero en Camino', desc: `${ride.driver.name} inició el traslado.` });
+        saveStateToStorage();
+        renderAll();
+        showToast('En Camino', `Servicio ${ride.id} ahora está en camino.`, 'success');
+        if (state.currentStep === 4) {
+            executeDemoStep(5);
+        }
+    } else if (targetStatus === 'completed') {
+        if (!ride.driver) {
+            showToast('Acción Inválida', 'No se puede completar un viaje que no tiene conductor asignado.', 'danger');
+            return;
+        }
+        openCompleteRideModal(ride);
     }
 }
