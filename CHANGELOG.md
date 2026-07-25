@@ -77,6 +77,9 @@ All notable changes to this project will be documented in this file.
 - Solución de bloqueo e inactividad en navegadores móviles (iOS/Android):
     - Se protegieron todas las lecturas y escrituras de `localStorage` con bloques `try-catch` para evitar excepciones de seguridad en navegadores móviles que navegan en modo de incógnito o privado, lo cual congelaba la ejecución del motor JS.
     - Se inyectó un manejador de errores global `window.onerror` al inicio de la aplicación para reportar visualmente cualquier alerta/excepción en el celular durante pruebas de campo.
+- Hotfix de error de sintaxis en `app.js`:
+    - Se removió una llave de cierre duplicada (`}`) accidental en la función `renderDriverReport` que rompía la inicialización y ejecución del script tanto en PC como en móviles.
+
 
 
 

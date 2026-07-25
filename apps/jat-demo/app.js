@@ -1048,7 +1048,6 @@ function renderDriverReport() {
         ridesList.innerHTML = '<div class="text-muted" style="text-align:center; padding:20px;">Este conductor no registra viajes completados.</div>';
     }
 }
-}
 
 // Render Reports
 function renderReports() {
