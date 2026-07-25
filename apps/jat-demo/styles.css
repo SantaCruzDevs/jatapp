@@ -3,18 +3,20 @@
    ========================================================================== */
 
 :root {
-    --bg-dark: #080a10;
-    --panel-dark: rgba(17, 24, 39, 0.7);
-    --panel-border: rgba(255, 255, 255, 0.08);
+    --bg-dark: #090c15;
+    --panel-dark: rgba(15, 19, 37, 0.75);
+    --panel-border: rgba(253, 222, 18, 0.12);
     --text-primary: #f3f4f6;
-    --text-muted: #9ca3af;
+    --text-muted: #a3aab8;
     
-    /* Curated Accent Palette */
-    --accent-blue: #0ea5e9;
-    --accent-blue-glow: rgba(14, 165, 233, 0.35);
+    /* Curated Accent Palette (Motoservi JAT Corporate Identity) */
+    --accent-blue: #fdde12;
+    --accent-blue-glow: rgba(253, 222, 18, 0.25);
+    --brand-blue: #1e3583;
+    --brand-yellow: #fdde12;
     
     --status-pending: #10b981;    /* Green */
-    --status-assigned: #f59e0b;   /* Yellow */
+    --status-assigned: #fdde12;   /* Yellow */
     --status-ontheway: #f97316;    /* Orange */
     --status-inprogress: #ef4444; /* Red */
     --status-completed: #8b5cf6;  /* Purple */
@@ -43,23 +45,23 @@ h1, h2, h3, .logo {
 /* Background glows for premium look */
 .bg-glow {
     position: absolute;
-    width: 400px;
-    height: 400px;
+    width: 450px;
+    height: 450px;
     border-radius: 50%;
-    filter: blur(120px);
+    filter: blur(140px);
     z-index: -1;
-    opacity: 0.15;
+    opacity: 0.25;
     pointer-events: none;
 }
 
 .bg-glow-1 {
-    background: var(--accent-blue);
+    background: var(--brand-blue);
     top: -50px;
     left: -50px;
 }
 
 .bg-glow-2 {
-    background: var(--status-completed);
+    background: var(--brand-yellow);
     bottom: -50px;
     right: -50px;
 }

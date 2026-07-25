@@ -641,7 +641,7 @@ function openTicketModal(ride) {
     container.innerHTML = `
         <div class="digital-ticket-box">
             <div class="ticket-header-print">
-                <h2>MOTOJAT LOGISTICS S.R.L.</h2>
+                <h2>MotoJat</h2>
                 <p>TICKET DIGITAL DE ENVÍO</p>
                 <small>Nro: ${ride.id}</small>
             </div>
@@ -1055,7 +1055,7 @@ function executeDemoStep(stepNum) {
         if (r) {
             r.status = 'completed';
             r.paymentMethod = 'Efectivo';
-            r.fare = 35;
+            r.fare = r.fare || 35;
             if (r.timeline.length < 4) {
                 r.timeline.push({ time: getSimulatedTime(), label: 'Servicio Completado', desc: 'Entregado con éxito. Pago: Efectivo. Obs: Ninguna. (Demora: +12 min)' });
             }

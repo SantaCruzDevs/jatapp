@@ -40,6 +40,11 @@ All notable changes to this project will be documented in this file.
 - Ampliada la lista preestablecida de conductores a 15 motoqueros fijos con numeración de móvil del 1 al 15 para pruebas de asignación directas y consistentes.
 - Ajustado y acortado el texto del campo de tarifa a "Ajustar Tarifa (Bs.)" para optimizar el orden visual en el modal de asignación de choferes.
 - Corregido desbordamiento vertical de modales en CSS: se estableció una altura máxima (`max-height: 90vh`) con contenedor flex y barra de desplazamiento vertical interna en `.modal-body` para mantener las entradas superiores de tarifa y búsqueda de móvil visibles en pantalla en todo momento sin importar la cantidad de choferes disponibles.
+- Corrección de cálculo de tarifa en ticket digital: se eliminó la sobreescritura de tarifa fija en el paso 6 de la simulación guiada para que se sumen correctamente los montos base y los recargos por desvío de ruta (ej: totalizando Bs. 39 en lugar de Bs. 35).
+- Actualizado el nombre de cabecera en el ticket digital de "MOTOJAT LOGISTICS S.R.L." a "MotoJat" a solicitud del cliente.
+- Rediseño de identidad corporativa en la Demo JATapp: se ajustaron las variables CSS de color para alinearse con los colores oficiales de **Motoservi JAT** (Azul Real `#1e3583` y Amarillo Brillante `#fdde12`) e integrado el logo estilizado oficial con el eslogan "Justo a Tiempo" en la pantalla de bienvenida y barra lateral de la plataforma.
+
+
 
 
 

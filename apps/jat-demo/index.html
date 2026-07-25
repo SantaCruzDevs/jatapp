@@ -23,9 +23,15 @@
     <!-- ROLE SELECTOR OVERLAY (DEMO STARTUP) -->
     <div class="role-selector-overlay" id="role-selector-overlay">
         <div class="role-selector-card">
-            <div class="role-logo">
-                <i class="fa-solid fa-bolt logo-icon"></i>
-                <span>JAT<span>app</span></span>
+            <div class="role-logo" style="display:flex; flex-direction:column; align-items:center; margin-bottom:24px; gap:4px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <i class="fa-solid fa-motorcycle logo-icon" style="color:var(--brand-yellow); font-size:32px; filter:drop-shadow(0 0 10px rgba(253,222,18,0.4));"></i>
+                    <div style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.1;">
+                        <span style="font-size:11px; text-transform:uppercase; letter-spacing:3px; font-weight:700; color:#fff;">Motoservi</span>
+                        <span style="font-size:36px; font-weight:900; color:var(--brand-yellow); text-transform:uppercase; font-family:'Outfit', sans-serif; letter-spacing:1px;">JAT</span>
+                    </div>
+                </div>
+                <div style="color:#1e3583; font-size:10px; font-weight:800; letter-spacing:2px; background:var(--brand-yellow); padding:3px 12px; border-radius:4px; text-transform:uppercase; margin-top:4px; font-family:'Outfit', sans-serif;">Justo a Tiempo</div>
             </div>
             <h2>SISTEMA LOGÍSTICO CORPORATIVO</h2>
             <p>Seleccione un rol de presentación. Para experimentar la sincronización colaborativa en tiempo real (Supabase Ready), abra múltiples pestañas del navegador en paralelo con diferentes roles.</p>
@@ -57,12 +63,15 @@
     <div class="app-layout" id="app-layout" style="display:none;">
         <!-- SIDEBAR -->
         <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <i class="fa-solid fa-bolt logo-icon"></i>
-                    <span>JAT<span>app</span></span>
+            <div class="sidebar-header" style="padding: 24px; border-bottom: 1px solid var(--panel-border); display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="fa-solid fa-motorcycle logo-icon" style="color:var(--brand-yellow); font-size:24px;"></i>
+                    <div style="display:flex; flex-direction:column; line-height:1.1; align-items:flex-start;">
+                        <span style="font-size:8px; text-transform:uppercase; letter-spacing:2px; font-weight:700; color:#fff;">Motoservi</span>
+                        <span style="font-size:24px; font-weight:900; color:var(--brand-yellow); text-transform:uppercase; font-family:'Outfit', sans-serif;">JAT</span>
+                    </div>
                 </div>
-                <div class="logo-subtext">by MotoJAT</div>
+                <div style="color:#1e3583; font-size:8px; font-weight:800; letter-spacing:1.5px; background:var(--brand-yellow); padding:2px 8px; border-radius:4px; text-transform:uppercase; margin-top:2px; font-family:'Outfit', sans-serif; display:inline-block;">Justo a Tiempo</div>
             </div>
 
             <!-- Presenter active role bar -->
