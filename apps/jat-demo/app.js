@@ -1046,34 +1046,64 @@ function simulateEmergencyScenario() {
     showToast('ALERTA DE EMERGENCIA', 'Solicitud crítica de Hospital Foianini recibida. Requiere asignación prioritaria.', 'danger');
 }
 
-// Manual Create Request
+// Manual Create Request Modal Opening
 document.getElementById('btn-request-ride-manual').addEventListener('click', () => {
+    const modal = document.getElementById('modal-new-ride');
+    modal.classList.add('active');
+    
+    document.getElementById('input-new-ride-requester').value = 'Lic. Andrés Mercado';
+    document.getElementById('input-new-ride-pickup').value = '4to Anillo Av. Bush';
+    document.getElementById('input-new-ride-destination').value = 'Parque Industrial PI-22';
+    document.getElementById('input-new-ride-fare').value = '30';
+});
+
+// Close triggers
+document.getElementById('btn-modal-new-ride-close').addEventListener('click', () => {
+    document.getElementById('modal-new-ride').classList.remove('active');
+});
+
+document.getElementById('btn-new-ride-cancel').addEventListener('click', () => {
+    document.getElementById('modal-new-ride').classList.remove('active');
+});
+
+// Create Request trigger
+document.getElementById('btn-new-ride-create').addEventListener('click', () => {
+    const company = document.getElementById('input-new-ride-company').value;
+    const requester = document.getElementById('input-new-ride-requester').value;
+    const pickup = document.getElementById('input-new-ride-pickup').value;
+    const destination = document.getElementById('input-new-ride-destination').value;
+    const fare = parseFloat(document.getElementById('input-new-ride-fare').value) || 30;
+    const priority = document.getElementById('input-new-ride-priority').value;
+    
     const id = `RIDE-${Math.floor(100 + Math.random() * 900)}`;
     const newRide = {
         id: id,
-        company: 'Banco Ganadero S.A.',
-        requester: 'Lic. Andrés Mercado',
-        pickup: '4to Anillo Av. Bush',
-        destination: 'Parque Industrial PI-22',
-        initialFare: 30,
-        fare: 30,
+        company: company,
+        requester: requester,
+        pickup: pickup,
+        destination: destination,
+        initialFare: fare,
+        fare: fare,
         waitTime: 0,
         elapsedTime: 0.1,
         status: 'pending',
-        priority: 'medium',
+        priority: priority,
         driver: null,
         adjustments: [],
+        paymentMethod: null,
+        observations: '',
         timeline: [
-            { time: getSimulatedTime(), label: 'Solicitud Recibida', desc: 'Ingreso al sistema por operador' }
+            { time: getSimulatedTime(), label: 'Solicitud Recibida', desc: `Ingreso al sistema por operador. Tarifa inicial: Bs. ${fare}` }
         ]
     };
     
     state.rides.push(newRide);
+    document.getElementById('modal-new-ride').classList.remove('active');
     saveStateToStorage();
     switchTab('operations');
     renderAll();
     
-    showToast('Nueva Solicitud', `Ingresada con ID ${id}`, 'info');
+    showToast('Nueva Solicitud', `Ingresada con ID ${id} por Bs. ${fare}`, 'info');
 });
 
 // Toast notification helper

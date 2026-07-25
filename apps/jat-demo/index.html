@@ -492,6 +492,65 @@
         </main>
     </div>
 
+    <!-- MODAL: NEW RIDE REQUEST -->
+    <div class="modal-overlay" id="modal-new-ride">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Nueva Solicitud Express</h2>
+                <button class="modal-close" id="btn-modal-new-ride-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">Ingrese los datos para registrar un envío express corporativo.</p>
+                
+                <div class="role-selector-container" style="background:transparent; border:none; padding:0; margin-bottom:12px;">
+                    <label style="font-weight:700; margin-bottom:4px; display:block; color:#fff;">Empresa Cliente</label>
+                    <select id="input-new-ride-company" style="width:100%; padding:8px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:13px;">
+                        <option value="Banco Ganadero S.A.">Banco Ganadero S.A.</option>
+                        <option value="Farmacorp S.A.">Farmacorp S.A.</option>
+                        <option value="Hospital Foianini S.A.">Hospital Foianini S.A.</option>
+                        <option value="Laboratorio Chávez Central">Laboratorio Chávez Central</option>
+                        <option value="Universidad Privada (UPSA)">Universidad Privada (UPSA)</option>
+                    </select>
+                </div>
+                
+                <div class="role-selector-container" style="background:transparent; border:none; padding:0; margin-bottom:12px;">
+                    <label style="font-weight:700; margin-bottom:4px; display:block; color:#fff;">Pasajero / Solicitante</label>
+                    <input type="text" id="input-new-ride-requester" value="Lic. Andrés Mercado" style="width:100%; padding:8px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:13px;">
+                </div>
+                
+                <div class="role-selector-container" style="background:transparent; border:none; padding:0; margin-bottom:12px;">
+                    <label style="font-weight:700; margin-bottom:4px; display:block; color:#fff;">Punto de Recogida (Origen)</label>
+                    <input type="text" id="input-new-ride-pickup" value="4to Anillo Av. Bush" style="width:100%; padding:8px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:13px;">
+                </div>
+                
+                <div class="role-selector-container" style="background:transparent; border:none; padding:0; margin-bottom:12px;">
+                    <label style="font-weight:700; margin-bottom:4px; display:block; color:#fff;">Punto de Entrega (Destino)</label>
+                    <input type="text" id="input-new-ride-destination" value="Parque Industrial PI-22" style="width:100%; padding:8px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:13px;">
+                </div>
+
+                <div style="display:flex; gap:12px; margin-bottom:16px;">
+                    <div style="flex:1;">
+                        <label style="font-weight:700; margin-bottom:4px; display:block; color:#fff;">Tarifa (Bs.)</label>
+                        <input type="number" id="input-new-ride-fare" value="30" style="width:100%; padding:8px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:13px;">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="font-weight:700; margin-bottom:4px; display:block; color:#fff;">Prioridad</label>
+                        <select id="input-new-ride-priority" style="width:100%; padding:8px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:13px;">
+                            <option value="low">Baja</option>
+                            <option value="medium" selected>Media</option>
+                            <option value="high">Alta</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:12px; justify-content:flex-end;">
+                    <button class="btn btn-outline" id="btn-new-ride-cancel">Cancelar</button>
+                    <button class="btn btn-primary" id="btn-new-ride-create">Crear Solicitud</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: DRIVER ASSIGNMENT -->
     <div class="modal-overlay" id="modal-assign">
         <div class="modal-card">

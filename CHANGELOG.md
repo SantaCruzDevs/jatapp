@@ -33,6 +33,8 @@ All notable changes to this project will be documented in this file.
 - Ajustes de localización para Bolivia: cambio de divisa de `$` a `Bs.` y ajuste de los rangos de precios para tarifas entre `20 Bs` y `60 Bs` según distancia (tanto en el estado por defecto como en escenarios simulados de hora pico y emergencias).
 - Traducción al español de las etiquetas de estado en la UI (ej. `ASSIGNED` a `Asignado`).
 - Integración funcional del botón "Iniciar Viaje" en el flujo del Kanban de operaciones, registrando el hito correspondiente con tiempos de retraso simulados en la línea de tiempo.
+- Rediseño del botón "Nueva Solicitud" para abrir un formulario modal interactivo (`modal-new-ride`) que permite al operador central configurar el cliente, solicitante, origen, destino, prioridad y editar/personalizar la tarifa (Bs.) del viaje antes de crearlo.
+
 
 
 
