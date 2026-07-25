@@ -786,11 +786,6 @@ function initReportsNavigation() {
     if (selectCompany) {
         selectCompany.addEventListener('change', renderCompanyReport);
     }
-    
-    const selectDriver = document.getElementById('select-report-driver');
-    if (selectDriver) {
-        selectDriver.addEventListener('change', renderDriverReport);
-    }
 
     const inputCommission = document.getElementById('input-report-commission');
     if (inputCommission) {
@@ -805,38 +800,73 @@ function initReportsNavigation() {
     const btnPay = document.getElementById('btn-report-pay-driver');
     if (btnPay) {
         btnPay.addEventListener('click', () => {
-            const selectEl = document.getElementById('select-report-driver');
-            const driverName = selectEl.options[selectEl.selectedIndex]?.text || 'Conductor';
+            const driverId = state.selectedReportDriverId;
+            if (!driverId) return;
+            const driver = state.drivers.find(d => d.id === driverId);
+            const driverName = driver ? driver.name : 'Conductor';
             
             const commInput = document.getElementById('input-report-commission');
             const commPct = parseFloat(commInput.value) || 0;
-            const driverRides = state.rides.filter(r => r.status === 'completed' && r.driver && r.driver.id === selectEl.value);
-            const ticketRides = driverRides.filter(r => r.paymentMethod === 'Ticket');
+            const driverRides = state.rides.filter(r => r.status === 'completed' && r.driver && r.driver.id === driverId);
+            const pendingTickets = driverRides.filter(r => r.paymentMethod === 'Ticket' && !r.driverPaid);
             
-            if (ticketRides.length === 0) {
-                showToast('Liquidación Vacía', 'Este conductor no registra viajes completados por Ticket para pagar.', 'warning');
+            if (pendingTickets.length === 0) {
+                showToast('Sin Pendientes', 'Este conductor no registra viajes por Ticket pendientes de pago.', 'warning');
                 return;
             }
 
-            showToast('Pago Registrado', `Se procesó la liquidación de ${ticketRides.length} tickets para ${driverName} aplicando un ${commPct}% de comisión central.`, 'success');
+            pendingTickets.forEach(r => {
+                r.driverPaid = true;
+            });
+            
+            saveStateToStorage();
+            renderDriverReport();
+            populateDriverReportDropdown();
+            showToast('Pago Completo Registrado', `Se liquidaron todos los tickets pendientes (${pendingTickets.length}) de ${driverName}.`, 'success');
         });
     }
 }
 
 function populateDriverReportDropdown() {
-    const select = document.getElementById('select-report-driver');
-    if (!select) return;
-    const currentVal = select.value;
-    select.innerHTML = '';
+    const container = document.getElementById('report-drivers-list-container');
+    if (!container) return;
+    container.innerHTML = '';
+    
     state.drivers.forEach(d => {
-        const opt = document.createElement('option');
-        opt.value = d.id;
-        opt.innerText = `Móvil ${d.movil} — ${d.name}`;
-        select.appendChild(opt);
+        const driverRides = state.rides.filter(r => r.status === 'completed' && r.driver && r.driver.id === d.id);
+        const totalFare = driverRides.reduce((acc, r) => acc + r.fare, 0);
+        
+        const card = document.createElement('div');
+        const isActive = state.selectedReportDriverId === d.id;
+        
+        card.style.background = isActive ? 'rgba(245, 195, 0, 0.15)' : 'rgba(255, 255, 255, 0.02)';
+        card.style.border = isActive ? '1px solid var(--accent-blue)' : '1px solid rgba(255, 255, 255, 0.05)';
+        card.style.borderRadius = '10px';
+        card.style.padding = '10px 12px';
+        card.style.cursor = 'pointer';
+        card.style.display = 'flex';
+        card.style.alignItems = 'center';
+        card.style.gap = '10px';
+        card.style.transition = 'var(--transition-smooth)';
+        
+        card.innerHTML = `
+            <img src="${d.avatar}" style="width:36px; height:36px; border-radius:50%; object-fit:cover; border: 1px solid ${isActive ? 'var(--accent-blue)' : 'rgba(255,255,255,0.1)'}; flex-shrink:0;">
+            <div style="flex-grow:1; min-width:0;">
+                <h5 style="color:#fff; margin:0; font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Móvil ${d.movil} — ${d.name}</h5>
+                <p style="font-size:10px; color:var(--text-muted); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    ${driverRides.length} viajes • Bs. ${totalFare}
+                </p>
+            </div>
+        `;
+        
+        card.addEventListener('click', () => {
+            state.selectedReportDriverId = d.id;
+            populateDriverReportDropdown();
+            renderDriverReport();
+        });
+        
+        container.appendChild(card);
     });
-    if (currentVal && state.drivers.some(d => d.id === currentVal)) {
-        select.value = currentVal;
-    }
 }
 
 function renderCompanyReport() {
@@ -881,15 +911,28 @@ function renderCompanyReport() {
 }
 
 function renderDriverReport() {
-    const selectEl = document.getElementById('select-report-driver');
-    if (!selectEl || !selectEl.value) return;
-    const driverId = selectEl.value;
+    const detailsContainer = document.getElementById('report-driver-details-container');
+    const placeholder = document.getElementById('report-driver-placeholder');
+    if (!detailsContainer || !placeholder) return;
+    
+    if (!state.selectedReportDriverId) {
+        detailsContainer.style.display = 'none';
+        placeholder.style.display = 'block';
+        return;
+    }
+    
+    detailsContainer.style.display = 'block';
+    placeholder.style.display = 'none';
+    
+    const driverId = state.selectedReportDriverId;
     const ridesList = document.getElementById('report-driver-rides-list');
     if (!ridesList) return;
     ridesList.innerHTML = '';
     
     const driver = state.drivers.find(d => d.id === driverId);
     if (!driver) return;
+    
+    document.getElementById('report-driver-details-title').innerText = `Móvil ${driver.movil} — ${driver.name}`;
     
     const driverRides = state.rides.filter(r => r.status === 'completed' && r.driver && r.driver.id === driverId);
     
@@ -920,13 +963,46 @@ function renderDriverReport() {
         const row = document.createElement('div');
         row.style.display = 'flex';
         row.style.justify = 'space-between';
-        row.style.padding = '8px 0';
-        row.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        row.style.alignItems = 'center';
+        row.style.padding = '8px 10px';
+        row.style.background = 'rgba(255,255,255,0.02)';
+        row.style.border = '1px solid rgba(255,255,255,0.05)';
+        row.style.borderRadius = '8px';
+        
+        let actionHTML = '';
+        if (r.paymentMethod === 'Ticket') {
+            if (r.driverPaid) {
+                actionHTML = `<span class="badge badge-success" style="font-size:9px; padding:2px 6px;">Liquidado</span>`;
+            } else {
+                actionHTML = `
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span class="badge badge-danger" style="font-size:9px; padding:2px 6px;">Pendiente</span>
+                        <button class="btn btn-primary btn-sm" id="btn-pay-single-ticket-${r.id}" style="font-size:9px; padding:2px 6px; border-radius:4px;">Pagar</button>
+                    </div>
+                `;
+            }
+        } else {
+            actionHTML = `<span class="badge badge-info" style="font-size:9px; padding:2px 6px;">${r.paymentMethod}</span>`;
+        }
+        
         row.innerHTML = `
-            <span>${r.id} (${r.company})</span>
-            <strong>Bs. ${r.fare} <small class="text-muted">(${r.paymentMethod || 'Ticket'})</small></strong>
+            <div style="display:flex; flex-direction:column; gap:2px;">
+                <strong>${r.id} (${r.company})</strong>
+                <span class="text-muted" style="font-size:10px;">Monto: Bs. ${r.fare}</span>
+            </div>
+            <div>${actionHTML}</div>
         `;
         ridesList.appendChild(row);
+        
+        if (r.paymentMethod === 'Ticket' && !r.driverPaid) {
+            document.getElementById(`btn-pay-single-ticket-${r.id}`).addEventListener('click', () => {
+                r.driverPaid = true;
+                saveStateToStorage();
+                renderDriverReport();
+                populateDriverReportDropdown();
+                showToast('Ticket Liquidado', `Se canceló la tarifa del ticket ${r.id} al conductor.`, 'success');
+            });
+        }
     });
     
     const commInput = document.getElementById('input-report-commission');
@@ -963,6 +1039,7 @@ function renderDriverReport() {
     if (driverRides.length === 0) {
         ridesList.innerHTML = '<div class="text-muted" style="text-align:center; padding:20px;">Este conductor no registra viajes completados.</div>';
     }
+}
 }
 
 // Render Reports

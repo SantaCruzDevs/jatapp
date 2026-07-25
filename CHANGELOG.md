@@ -70,9 +70,11 @@ All notable changes to this project will be documented in this file.
         - Si se arrastra a **Completado**, se abre de forma reactiva el modal de observaciones y selección de método de pago para resguardar la consistencia financiera.
         - Se conserva el funcionamiento de los botones tradicionales para ofrecer control redundante.
 - Incorporación de control de Comisión Central editable y pagos de Tickets en Reportes Administrativos:
-    - Se añadió un campo numérico interactivo `% Central` en la pestaña de Liquidación de Motoqueros para editar libremente la comisión que retiene la central (ej: 20%). El balance neto se recalcula automáticamente en tiempo real.
-    - Se añadió un desglose detallado mostrando cantidad de viajes y montos acumulados individualmente por canal (Efectivo, QR, y Ticket corporativo).
-    - Se incorporó un botón de acción **Pagar / Liquidar** que permite a la dueña saldar cuentas y procesar formalmente el desembolso de los créditos por ticket acumulados.
+    - Se rediseñó la pestaña de Liquidación a una estructura dividida (split view): un menú lateral izquierdo con la lista visual de todos los motoqueros (con avatares, números de móvil, conteo de viajes y total acumulado) y un panel derecho con detalles y balances dinámicos tras seleccionar un chofer.
+    - Se añadió un campo numérico interactivo `% Central` para editar en tiempo real la comisión que retiene la central (ej: 20%). El balance neto se recalcula automáticamente.
+    - El balance muestra el desglose detallado de todos los viajes y montos acumulados por canal (Efectivo, QR, y Ticket corporativo) de forma independiente.
+    - Se integró cancelación y liquidación de Tickets individuales en el historial de carreras: cada carrera por Ticket muestra un estado (`Pendiente` o `Liquidado`) con un botón **Pagar** exclusivo para saldar ese ticket de forma individual, además del botón general **Liquidar Tickets** en la tarjeta de balance para cancelar todos a la vez.
+
 
 
 

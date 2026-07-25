@@ -403,71 +403,84 @@
 
                         <!-- SUB-TAB 2: DRIVER LIQUIDATION -->
                         <div id="report-driver-section" style="display:none;">
-                            <div style="display:flex; gap:16px; align-items:center; margin-bottom:20px; flex-wrap:wrap;">
-                                <div style="flex:1; min-width:200px;">
-                                    <label style="font-weight:700; margin-bottom:4px; display:block; color:#fff; font-size:12px;">Seleccionar Motoquero</label>
-                                    <select id="select-report-driver" style="width:100%; padding:8px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:13px;">
-                                        <!-- Injected dynamically based on state.drivers -->
-                                    </select>
+                            <div style="display:grid; grid-template-columns: 280px 1fr; gap:20px; align-items:start;">
+                                <!-- Left: Drivers List -->
+                                <div style="background:rgba(0,0,0,0.2); border:1px solid var(--panel-border); padding:16px; border-radius:12px; max-height: 520px; overflow-y: auto;">
+                                    <h4 style="margin-bottom:12px; color:#fff; font-size:14px;"><i class="fa-solid fa-users text-yellow"></i> Motoqueros Disponibles</h4>
+                                    <div id="report-drivers-list-container" style="display:flex; flex-direction:column; gap:10px;">
+                                        <!-- Dynamically injected driver list cards -->
+                                    </div>
                                 </div>
-                                <div style="width:120px;">
-                                    <label style="font-weight:700; margin-bottom:4px; display:block; color:#fff; font-size:12px;">% Central</label>
-                                    <input type="number" id="input-report-commission" value="20" min="0" max="100" style="width:100%; padding:8px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:13px; font-weight:700; text-align:center;">
-                                </div>
-                                <div class="cl-summary-card" style="padding:12px 20px; max-width:180px; margin:0;">
-                                    <h3 id="report-driver-total-rides" style="font-size:20px; margin:0;">0</h3>
-                                    <span style="font-size:10px;">Viajes Completados</span>
-                                </div>
-                                <div class="cl-summary-card" style="padding:12px 20px; max-width:180px; margin:0;">
-                                    <h3 id="report-driver-total-collected" style="font-size:20px; margin:0; color:#10b981;">Bs. 0</h3>
-                                    <span style="font-size:10px;">Total Recaudado</span>
-                                </div>
-                                <div class="cl-summary-card" style="padding:12px 20px; max-width:180px; margin:0;">
-                                    <h3 id="report-driver-share" style="font-size:20px; margin:0; color:#eab308;">Bs. 0</h3>
-                                    <span style="font-size:10px;" id="lbl-report-driver-share">Ganancia Chofer (80%)</span>
-                                </div>
-                            </div>
 
-                            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin-bottom:24px;">
-                                <div style="background:rgba(0,0,0,0.2); border:1px solid var(--panel-border); padding:20px; border-radius:12px;">
-                                    <h4 style="margin-bottom:12px; color:#fff; font-size:14px;"><i class="fa-solid fa-scale-balanced text-yellow"></i> Balance de Liquidación</h4>
-                                    <div class="stats-list">
-                                        <div class="stat-row">
-                                            <span>Cobrado en Efectivo</span>
-                                            <strong id="report-driver-bal-cash">Bs. 0 (0)</strong>
+                                <!-- Right: Selected Driver Details & Balance -->
+                                <div id="report-driver-details-container" style="display:none;">
+                                    <!-- Selection header -->
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px;">
+                                        <h3 id="report-driver-details-title" style="color:#fff; font-size:16px; margin:0;">Móvil X — Nombre</h3>
+                                        <div style="width:140px; display:flex; align-items:center; gap:8px;">
+                                            <label style="font-weight:700; color:#fff; font-size:11px; white-space:nowrap; margin:0;">% Central:</label>
+                                            <input type="number" id="input-report-commission" value="20" min="0" max="100" style="width:60px; padding:6px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:12px; font-weight:700; text-align:center; margin:0;">
                                         </div>
-                                        <div class="stat-row">
-                                            <span>Cobrado por QR</span>
-                                            <strong id="report-driver-bal-qr">Bs. 0 (0)</strong>
+                                    </div>
+
+                                    <!-- KPIs -->
+                                    <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+                                        <div class="cl-summary-card" style="padding:10px 14px; max-width:180px; margin:0; flex:1;">
+                                            <h3 id="report-driver-total-rides" style="font-size:18px; margin:0; color:#fff;">0</h3>
+                                            <span style="font-size:10px;">Viajes Completados</span>
                                         </div>
-                                        <div class="stat-row">
-                                            <span>Cobrado por Ticket</span>
-                                            <strong id="report-driver-bal-ticket">Bs. 0 (0)</strong>
+                                        <div class="cl-summary-card" style="padding:10px 14px; max-width:180px; margin:0; flex:1;">
+                                            <h3 id="report-driver-total-collected" style="font-size:18px; margin:0; color:#10b981;">Bs. 0</h3>
+                                            <span style="font-size:10px;">Total Recaudado</span>
                                         </div>
-                                        <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08); margin:8px 0;">
-                                        <div class="stat-row" style="font-size:14px; font-weight:700;">
-                                            <span id="report-driver-settle-label">Monto Neto a Pagar</span>
-                                            <strong id="report-driver-settle-amount" style="color:#eab308;">Bs. 0</strong>
+                                        <div class="cl-summary-card" style="padding:10px 14px; max-width:180px; margin:0; flex:1;">
+                                            <h3 id="report-driver-share" style="font-size:18px; margin:0; color:#eab308;">Bs. 0</h3>
+                                            <span style="font-size:10px;" id="lbl-report-driver-share">Ganancia Chofer (80%)</span>
                                         </div>
-                                        <hr style="border:none; border-top:1px dashed rgba(255,255,255,0.08); margin:12px 0;">
-                                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                                            <div>
-                                                <span style="font-size:10px; color:var(--text-muted); display:block;">Comisión Central:</span>
-                                                <strong id="report-driver-commission-amount" style="color:#ff6b6b; font-size:13px;">Bs. 0</strong>
+                                    </div>
+
+                                    <!-- Balance and Ride list -->
+                                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+                                        <!-- Balance channel card -->
+                                        <div style="background:rgba(0,0,0,0.2); border:1px solid var(--panel-border); padding:16px; border-radius:12px; align-self:start;">
+                                            <h4 style="margin-bottom:12px; color:#fff; font-size:13px;"><i class="fa-solid fa-scale-balanced text-yellow"></i> Balance de Liquidación</h4>
+                                            <div class="stats-list" style="font-size:12px;">
+                                                <div class="stat-row"><span>Cobrado en Efectivo</span><strong id="report-driver-bal-cash">Bs. 0</strong></div>
+                                                <div class="stat-row"><span>Cobrado por QR</span><strong id="report-driver-bal-qr">Bs. 0</strong></div>
+                                                <div class="stat-row"><span>Cobrado por Ticket</span><strong id="report-driver-bal-ticket">Bs. 0</strong></div>
+                                                <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08); margin:8px 0;">
+                                                <div class="stat-row" style="font-size:13px; font-weight:700;">
+                                                    <span id="report-driver-settle-label">Monto Neto a Pagar</span>
+                                                    <strong id="report-driver-settle-amount" style="color:#eab308;">Bs. 0</strong>
+                                                </div>
+                                                <hr style="border:none; border-top:1px dashed rgba(255,255,255,0.08); margin:12px 0;">
+                                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                    <div>
+                                                        <span style="font-size:9px; color:var(--text-muted); display:block;">Comisión Central:</span>
+                                                        <strong id="report-driver-commission-amount" style="color:#ff6b6b; font-size:12px;">Bs. 0</strong>
+                                                    </div>
+                                                    <button class="btn btn-primary btn-sm" id="btn-report-pay-driver" style="font-size:10px; padding:6px 12px;"><i class="fa-solid fa-hand-holding-dollar"></i> Liquidar Tickets</button>
+                                                </div>
                                             </div>
-                                            <button class="btn btn-primary btn-sm" id="btn-report-pay-driver" style="font-size:11px; padding:6px 12px;"><i class="fa-solid fa-hand-holding-dollar"></i> Pagar / Liquidar</button>
+                                            <small class="text-muted" style="font-size:9px; display:block; margin-top:10px; line-height:1.3;">
+                                                * La liquidación se calcula restando el Efectivo en mano de la ganancia neta correspondiente al motoquero.
+                                            </small>
+                                        </div>
+
+                                        <!-- Rides list card with settle buttons for Tickets -->
+                                        <div style="background:rgba(0,0,0,0.2); border:1px solid var(--panel-border); padding:16px; border-radius:12px;">
+                                            <h4 style="margin-bottom:12px; color:#fff; font-size:13px;"><i class="fa-solid fa-list-check"></i> Historial y Cancelación de Tickets</h4>
+                                            <div style="max-height:240px; overflow-y:auto; font-size:11px; display:flex; flex-direction:column; gap:8px;" id="report-driver-rides-list">
+                                                <!-- Dynamically injected rides with payment status and 'Pagar' button -->
+                                            </div>
                                         </div>
                                     </div>
-                                    <small class="text-muted" style="font-size:10px; display:block; margin-top:10px; line-height:1.3;">
-                                        * La liquidación se calcula restando el Efectivo en mano de la ganancia neta correspondiente al motoquero.
-                                    </small>
                                 </div>
 
-                                <div style="background:rgba(0,0,0,0.2); border:1px solid var(--panel-border); padding:20px; border-radius:12px;">
-                                    <h4 style="margin-bottom:12px; color:#fff; font-size:14px;"><i class="fa-solid fa-list-check"></i> Detalle de Carreras Realizadas</h4>
-                                    <div style="max-height:180px; overflow-y:auto; font-size:12px;" id="report-driver-rides-list">
-                                        <!-- Injected dynamically -->
-                                    </div>
+                                <!-- Right: No Driver Selected placeholder -->
+                                <div id="report-driver-placeholder" style="background:rgba(0,0,0,0.1); border:1px dashed var(--panel-border); padding:60px 40px; text-align:center; border-radius:12px; color:var(--text-muted); width:100%;">
+                                    <i class="fa-solid fa-user-check" style="font-size:32px; margin-bottom:12px; display:block; color:var(--accent-blue);"></i>
+                                    Seleccione un motoquero de la lista lateral para auditar su balance de carreras, liquidar tickets y ajustar comisiones.
                                 </div>
                             </div>
                         </div>
