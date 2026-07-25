@@ -47,6 +47,11 @@ All notable changes to this project will be documented in this file.
     - **Planilla de Clientes (Consumo Mensual):** Permite filtrar por empresa y muestra la planilla con el detalle de fecha, solicitante, ruta, forma de pago y tarifa de cada ticket consumido, junto con el total facturado acumulado para cobros.
     - **Liquidación de Motoqueros:** Muestra la planilla de servicios completados de cada móvil, calcula el reparto de ganancias del 80% (motoquero) y 20% (MotoJat), y cruza los métodos de pago (Efectivo en mano vs QR/Ticket digital) para determinar el balance neto de liquidación (Monto a Transferir o Rendir).
 - Restringida la pestaña de **Reportes & Analytics** de forma exclusiva para el rol **Administrador (Dueña)**: el enlace de acceso del menú lateral se oculta dinámicamente si se ingresa con el rol de Operador Central o Motoquero para proteger la información comercial sensible.
+- Enforzado la matriz de permisos de navegación por roles en el sidebar:
+    - **Motoquero:** Solo ve el **Centro de Operaciones** (ocultando Dashboard, Facturación, Reportes, Cierre y Configuración).
+    - **Operador Central:** Solo ve el **Centro de Operaciones**, **Facturación Digital**, y **Configuración** (ocultando Dashboard Ejecutivo, Reportes y Cierre Comercial).
+    - **Administrador:** Mantiene acceso completo a todas las secciones ejecutivas y de control.
+
 
 
 

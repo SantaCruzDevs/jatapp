@@ -203,11 +203,20 @@ function selectPresentationRole(role) {
     const profileRole = document.getElementById('user-display-role');
     const profileImg = document.getElementById('sidebar-avatar');
     
-    // Toggle active menu visibility based on role
-    const navReports = document.getElementById('nav-reports');
-    if (navReports) {
-        navReports.style.display = (role === 'admin') ? 'flex' : 'none';
-    }
+    // Hide/Show sidebar links based on role permission matrix
+    const navs = {
+        dashboard: document.getElementById('nav-dashboard'),
+        operations: document.getElementById('nav-operations'),
+        billing: document.getElementById('nav-billing'),
+        reports: document.getElementById('nav-reports'),
+        closing: document.getElementById('nav-closing'),
+        settings: document.getElementById('nav-settings')
+    };
+    
+    // Reset all displays to flex
+    Object.values(navs).forEach(nav => {
+        if (nav) nav.style.display = 'flex';
+    });
     
     if (role === 'admin') {
         activeRoleText.innerText = 'Administrador';
@@ -219,13 +228,27 @@ function selectPresentationRole(role) {
         activeRoleText.innerText = 'Operador Central';
         profileName.innerText = 'Operador Central 1';
         profileRole.innerText = 'Despachador Oficial';
-        profileImg.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+        profileImg.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=200';
+        
+        // Hide Owner-only tabs
+        if (navs.dashboard) navs.dashboard.style.display = 'none';
+        if (navs.reports) navs.reports.style.display = 'none';
+        if (navs.closing) navs.closing.style.display = 'none';
+        
         switchTab('operations');
     } else {
         activeRoleText.innerText = 'Motoquero (Field)';
         profileName.innerText = 'Carlos Méndez';
         profileRole.innerText = 'Motoquero JAT';
-        profileImg.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200';
+        profileImg.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=200';
+        
+        // Hide everything except Operations tab
+        if (navs.dashboard) navs.dashboard.style.display = 'none';
+        if (navs.billing) navs.billing.style.display = 'none';
+        if (navs.reports) navs.reports.style.display = 'none';
+        if (navs.closing) navs.closing.style.display = 'none';
+        if (navs.settings) navs.settings.style.display = 'none';
+        
         switchTab('operations');
     }
     
