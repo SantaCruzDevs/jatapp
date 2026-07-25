@@ -37,6 +37,9 @@ All notable changes to this project will be documented in this file.
 - Añadida capacidad para modificar la tarifa en estado "Pendiente" desde el modal de asignación de chofer (`modal-assign`) justo antes de delegar el servicio, con registro automático de la modificación en la línea de tiempo.
 - Integración de campo de búsqueda por "Número de Móvil" en el modal de asignación para filtrado en tiempo real de conductores y asignación instantánea al presionar Enter.
 - Añadida generación dinámica de conductores al vuelo: si el operador busca y asigna un número de móvil no registrado en la lista mock de la demo (ej. Móvil 5), el sistema genera automáticamente un conductor con nombre "Juan Perez" manejando una moto "Navi ZZZ-456" y lo asigna al servicio para asegurar que la demo funcione con cualquier valor.
+- Ampliada la lista preestablecida de conductores a 15 motoqueros fijos con numeración de móvil del 1 al 15 para pruebas de asignación directas y consistentes.
+- Ajustado y acortado el texto del campo de tarifa a "Ajustar Tarifa (Bs.)" para optimizar el orden visual en el modal de asignación de choferes.
+
 
 
 

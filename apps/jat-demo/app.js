@@ -39,11 +39,21 @@ const DEFAULT_STATE = {
         Ticket: 410
     },
     drivers: [
-        { id: 'DRV-01', movil: '15', name: 'Carlos Méndez', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150', rating: 4.8, distance: '1.2 km', status: 'available', completed: 14, zone: 'Centro', vehicle: 'Vespa SCZ-228' },
-        { id: 'DRV-02', movil: '28', name: 'Jorge Ribera', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150', rating: 4.9, distance: '0.8 km', status: 'available', completed: 18, zone: 'Equipetrol', vehicle: 'Honda SCZ-994' },
-        { id: 'DRV-03', movil: '9', name: 'Pedro Gómez', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150', rating: 4.6, distance: '2.5 km', status: 'busy', completed: 9, zone: 'Norte', vehicle: 'Yamaha SCZ-441' },
-        { id: 'DRV-04', movil: '42', name: 'Mario Justiniano', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150', rating: 4.7, distance: '1.9 km', status: 'available', completed: 11, zone: 'Sur', vehicle: 'Suzuki SCZ-112' },
-        { id: 'DRV-05', movil: '73', name: 'Hugo Banzer', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=150', rating: 4.5, distance: '3.1 km', status: 'available', completed: 8, zone: 'Este', vehicle: 'TVS SCZ-550' }
+        { id: 'DRV-01', movil: '1', name: 'Carlos Méndez', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150', rating: 4.8, distance: '1.2 km', status: 'available', completed: 14, zone: 'Centro', vehicle: 'Vespa SCZ-228' },
+        { id: 'DRV-02', movil: '2', name: 'Jorge Ribera', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150', rating: 4.9, distance: '0.8 km', status: 'available', completed: 18, zone: 'Equipetrol', vehicle: 'Honda SCZ-994' },
+        { id: 'DRV-03', movil: '3', name: 'Pedro Gómez', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150', rating: 4.6, distance: '2.5 km', status: 'busy', completed: 9, zone: 'Norte', vehicle: 'Yamaha SCZ-441' },
+        { id: 'DRV-04', movil: '4', name: 'Mario Justiniano', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150', rating: 4.7, distance: '1.9 km', status: 'available', completed: 11, zone: 'Sur', vehicle: 'Suzuki SCZ-112' },
+        { id: 'DRV-05', movil: '5', name: 'Juan Perez', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150', rating: 4.8, distance: '0.5 km', status: 'available', completed: 10, zone: 'Centro', vehicle: 'Honda Navi ZZZ-456' },
+        { id: 'DRV-06', movil: '6', name: 'Roberto Siles', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=150', rating: 4.5, distance: '1.4 km', status: 'available', completed: 12, zone: 'Equipetrol', vehicle: 'Taurus SCZ-671' },
+        { id: 'DRV-07', movil: '7', name: 'Lucas Rojas', avatar: 'https://images.unsplash.com/photo-1500048993953-d23a436266cf?auto=format&fit=crop&q=80&w=150', rating: 4.6, distance: '2.1 km', status: 'available', completed: 15, zone: 'Norte', vehicle: 'KTM SCZ-892' },
+        { id: 'DRV-08', movil: '8', name: 'Jose Mamani', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=150', rating: 4.4, distance: '2.7 km', status: 'available', completed: 7, zone: 'Sur', vehicle: 'Pegasus SCZ-340' },
+        { id: 'DRV-09', movil: '9', name: 'Daniel Vargas', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=150', rating: 4.7, distance: '0.9 km', status: 'available', completed: 16, zone: 'Oeste', vehicle: 'Kawasaki SCZ-721' },
+        { id: 'DRV-10', movil: '10', name: 'Walter Ortiz', avatar: 'https://images.unsplash.com/photo-1542909168-82c3e7fdca5c?auto=format&fit=crop&q=80&w=150', rating: 4.8, distance: '1.5 km', status: 'available', completed: 19, zone: 'Centro', vehicle: 'Honda SCZ-105' },
+        { id: 'DRV-11', movil: '11', name: 'Fernando Torrico', avatar: 'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?auto=format&fit=crop&q=80&w=150', rating: 4.6, distance: '1.8 km', status: 'available', completed: 13, zone: 'Equipetrol', vehicle: 'Yamaha SCZ-552' },
+        { id: 'DRV-12', movil: '12', name: 'Oscar Paz', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=150', rating: 4.7, distance: '2.0 km', status: 'available', completed: 14, zone: 'Norte', vehicle: 'Vespa SCZ-991' },
+        { id: 'DRV-13', movil: '13', name: 'Miguel Suarez', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150', rating: 4.5, distance: '2.8 km', status: 'available', completed: 10, zone: 'Sur', vehicle: 'Suzuki SCZ-382' },
+        { id: 'DRV-14', movil: '14', name: 'Ricardo Vaca', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150', rating: 4.4, distance: '3.0 km', status: 'available', completed: 8, zone: 'Oeste', vehicle: 'TVS SCZ-492' },
+        { id: 'DRV-15', movil: '15', name: 'Alberto Roca', avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=150', rating: 4.6, distance: '1.6 km', status: 'available', completed: 11, zone: 'Centro', vehicle: 'Ducati SCZ-804' }
     ],
     notifications: [
         { title: 'Sistema Inicializado', desc: 'Entorno de Demostración Comercial Listo.', time: '09:00', type: 'success' }
@@ -89,6 +99,11 @@ function loadStateFromStorage() {
     if (val) {
         try {
             state = JSON.parse(val);
+            // If they are on an old state or missing drivers, force reset!
+            if (!state.drivers || state.drivers.length < 15 || !state.drivers[0].movil || state.drivers[0].movil === '15') {
+                state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+                saveStateToStorage();
+            }
         } catch (e) {
             state = JSON.parse(JSON.stringify(DEFAULT_STATE));
         }
