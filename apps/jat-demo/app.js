@@ -378,18 +378,24 @@ function openAssignModal() {
             const query = e.target.value.trim();
             if (query) {
                 // Find exact match by movil number
-                const match = state.drivers.find(d => d.movil === query);
-                if (match) {
-                    assignDriver(match);
-                } else {
-                    // Try partial match
-                    const partialMatch = state.drivers.find(d => d.movil.includes(query) || d.name.toLowerCase().includes(query.toLowerCase()));
-                    if (partialMatch) {
-                        assignDriver(partialMatch);
-                    } else {
-                        showToast('Sin Resultados', `No se encontró el Móvil ${query}`, 'warning');
-                    }
+                let match = state.drivers.find(d => d.movil === query);
+                if (!match) {
+                    // Create dynamic driver on the fly with custom details for demo realism!
+                    match = {
+                        id: `DRV-GEN-${query}`,
+                        movil: query,
+                        name: `Juan Perez`,
+                        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150',
+                        rating: 4.8,
+                        distance: '0.5 km',
+                        status: 'available',
+                        completed: 10,
+                        zone: 'Centro',
+                        vehicle: 'Honda Navi ZZZ-456'
+                    };
+                    state.drivers.push(match);
                 }
+                assignDriver(match);
             }
         }
     });
