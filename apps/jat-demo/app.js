@@ -74,6 +74,7 @@ window.addEventListener('DOMContentLoaded', () => {
     initHelpCenter();
     initNotificationDropdown();
     initReportsNavigation();
+    initDriverWalletFilters();
     
     // Initial clock update
     updateClock();
@@ -175,7 +176,8 @@ function switchTab(tabId) {
         billing: { main: 'Módulo de Facturación Digital', sub: 'Visualización y generación de facturas comerciales' },
         reports: { main: 'Reportes & Analytics', sub: 'Inteligencia de negocio y rendimiento operativo' },
         closing: { main: 'Propuesta de Transformación Digital', sub: 'Modelos de implementación para el despegue de MotoJAT' },
-        'admin-settings': { main: 'Configuración del Sistema', sub: 'Tablas de tarifas, usuarios y parámetros de la plataforma' }
+        'admin-settings': { main: 'Configuración del Sistema', sub: 'Tablas de tarifas, usuarios y parámetros de la plataforma' },
+        'driver-balance': { main: 'Mi Balance & Historial', sub: 'Control de cobros personales, comisiones e historial de viajes' }
     };
     
     document.getElementById('page-title').innerText = titles[tabId]?.main || 'JATapp';
@@ -210,12 +212,15 @@ function selectPresentationRole(role) {
         billing: document.getElementById('nav-billing'),
         reports: document.getElementById('nav-reports'),
         closing: document.getElementById('nav-closing'),
-        settings: document.getElementById('nav-settings')
+        settings: document.getElementById('nav-settings'),
+        driverBalance: document.getElementById('nav-driver-balance')
     };
     
     // Reset all displays to flex
-    Object.values(navs).forEach(nav => {
-        if (nav) nav.style.display = 'flex';
+    Object.entries(navs).forEach(([key, nav]) => {
+        if (nav) {
+            nav.style.display = (key === 'driverBalance') ? 'none' : 'flex';
+        }
     });
     
     if (role === 'admin') {
@@ -242,12 +247,14 @@ function selectPresentationRole(role) {
         profileRole.innerText = 'Motoquero JAT';
         profileImg.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=200';
         
-        // Hide everything except Operations tab
+        // Hide everything except Operations and Driver Balance tab
         if (navs.dashboard) navs.dashboard.style.display = 'none';
         if (navs.billing) navs.billing.style.display = 'none';
         if (navs.reports) navs.reports.style.display = 'none';
         if (navs.closing) navs.closing.style.display = 'none';
         if (navs.settings) navs.settings.style.display = 'none';
+        
+        if (navs.driverBalance) navs.driverBalance.style.display = 'flex';
         
         switchTab('operations');
     }
@@ -1082,6 +1089,7 @@ function renderAll() {
     renderKanban();
     renderBilling();
     renderReports();
+    renderDriverWallet();
     renderActivityFeed();
     renderNotificationsDropdown();
     updateKPIs();
@@ -1393,4 +1401,106 @@ function showToast(title, desc, type = 'info', appendToHistory = true) {
 function getSimulatedTime() {
     const now = new Date();
     return now.toTimeString().split(' ')[0].substring(0, 5);
+}
+
+let driverActivePeriod = 'month'; // 'day', 'week', 'month'
+
+function initDriverWalletFilters() {
+    const btnDay = document.getElementById('btn-driver-filter-day');
+    const btnWeek = document.getElementById('btn-driver-filter-week');
+    const btnMonth = document.getElementById('btn-driver-filter-month');
+    
+    if (btnDay && btnWeek && btnMonth) {
+        btnDay.addEventListener('click', () => {
+            btnDay.className = 'btn btn-primary btn-sm';
+            btnWeek.className = 'btn btn-outline btn-sm';
+            btnMonth.className = 'btn btn-outline btn-sm';
+            driverActivePeriod = 'day';
+            renderDriverWallet();
+        });
+        btnWeek.addEventListener('click', () => {
+            btnWeek.className = 'btn btn-outline btn-sm';
+            btnDay.className = 'btn btn-outline btn-sm';
+            btnMonth.className = 'btn btn-outline btn-sm';
+            btnWeek.className = 'btn btn-primary btn-sm';
+            driverActivePeriod = 'week';
+            renderDriverWallet();
+        });
+        btnMonth.addEventListener('click', () => {
+            btnMonth.className = 'btn btn-primary btn-sm';
+            btnDay.className = 'btn btn-outline btn-sm';
+            btnWeek.className = 'btn btn-outline btn-sm';
+            driverActivePeriod = 'month';
+            renderDriverWallet();
+        });
+    }
+}
+
+function renderDriverWallet() {
+    const ridesList = document.getElementById('driver-wallet-rides-list');
+    if (!ridesList) return;
+    ridesList.innerHTML = '';
+    
+    // Carlos Méndez (Móvil 1) is DRV-01
+    const driverId = 'DRV-01';
+    
+    let driverRides = state.rides.filter(r => r.status === 'completed' && r.driver && r.driver.id === driverId);
+    
+    // Filter by simulated period
+    if (driverActivePeriod === 'day') {
+        driverRides = driverRides.slice(0, 1);
+    } else if (driverActivePeriod === 'week') {
+        driverRides = driverRides.slice(0, 2);
+    }
+    
+    let totalCollected = 0;
+    let cash = 0;
+    let qr = 0;
+    let ticket = 0;
+    
+    driverRides.forEach(r => {
+        totalCollected += r.fare;
+        if (r.paymentMethod === 'Efectivo') cash += r.fare;
+        else if (r.paymentMethod === 'QR') qr += r.fare;
+        else if (r.paymentMethod === 'Ticket') ticket += r.fare;
+        
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.justify = 'space-between';
+        row.style.padding = '8px 0';
+        row.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        row.innerHTML = `
+            <span><strong>Viaje ${r.id}</strong> — ${r.company}</span>
+            <strong>Bs. ${r.fare} <small class="text-muted">(${r.paymentMethod || 'Ticket'})</small></strong>
+        `;
+        ridesList.appendChild(row);
+    });
+    
+    const driverShare = Math.round(totalCollected * 0.80);
+    const settleAmount = driverShare - cash;
+    
+    document.getElementById('driver-wallet-rides-count').innerText = driverRides.length;
+    document.getElementById('driver-wallet-gross-collected').innerText = `Bs. ${totalCollected}`;
+    document.getElementById('driver-wallet-net-earned').innerText = `Bs. ${driverShare}`;
+    
+    document.getElementById('driver-wallet-cash').innerText = `Bs. ${cash}`;
+    document.getElementById('driver-wallet-qr').innerText = `Bs. ${qr}`;
+    document.getElementById('driver-wallet-ticket').innerText = `Bs. ${ticket}`;
+    
+    const labelEl = document.getElementById('driver-wallet-settle-label');
+    const amountEl = document.getElementById('driver-wallet-settle-amount');
+    
+    if (settleAmount >= 0) {
+        labelEl.innerText = 'Saldo a Cobrar de Central:';
+        amountEl.innerText = `Bs. ${settleAmount}`;
+        amountEl.className = 'text-green';
+    } else {
+        labelEl.innerText = 'Saldo a Rendir a Central:';
+        amountEl.innerText = `Bs. ${Math.abs(settleAmount)}`;
+        amountEl.className = 'text-orange';
+    }
+    
+    if (driverRides.length === 0) {
+        ridesList.innerHTML = '<div class="text-muted" style="text-align:center; padding:20px;">No registras carreras en este periodo.</div>';
+    }
 }

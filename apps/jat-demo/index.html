@@ -90,6 +90,10 @@
                     <span>Centro de Operaciones</span>
                     <span class="badge badge-pending" id="badge-pending-count">1</span>
                 </a>
+                <a href="#" class="nav-item" data-target="driver-balance" id="nav-driver-balance" style="display:none;">
+                    <i class="fa-solid fa-wallet"></i>
+                    <span>Mi Balance & Historial</span>
+                </a>
                 <a href="#" class="nav-item" data-target="billing" id="nav-billing">
                     <i class="fa-solid fa-file-invoice-dollar"></i>
                     <span>Facturación Digital</span>
@@ -513,6 +517,69 @@
                                 <li><i class="fa-solid fa-circle-check text-green"></i> Conexión con Supabase Realtime Channels.</li>
                                 <li><i class="fa-solid fa-circle-check text-green"></i> Encriptación y almacenamiento JWT.</li>
                             </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- MODULE 11b: DRIVER PERSONAL WALLET & HISTORY -->
+                <section id="module-driver-balance" class="module-tab">
+                    <div class="reports-container" style="background:var(--panel-dark); border:1px solid var(--panel-border); border-radius:20px; padding:24px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:16px;">
+                            <h2>Mi Balance & Liquidación Personal</h2>
+                            <div style="display:flex; gap:8px;">
+                                <button class="btn btn-primary btn-sm" id="btn-driver-filter-day" style="font-size:12px; padding:4px 10px;">Hoy</button>
+                                <button class="btn btn-outline btn-sm" id="btn-driver-filter-week" style="font-size:12px; padding:4px 10px;">Esta Semana</button>
+                                <button class="btn btn-outline btn-sm" id="btn-driver-filter-month" style="font-size:12px; padding:4px 10px;">Este Mes</button>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:16px; margin-bottom:24px; flex-wrap:wrap;">
+                            <div class="cl-summary-card" style="padding:16px 20px; max-width:220px; margin:0; flex:1;">
+                                <h3 id="driver-wallet-rides-count" style="font-size:24px; margin-bottom:4px; color:#fff;">0</h3>
+                                <span style="font-size:11px;">Carreras Completadas</span>
+                            </div>
+                            <div class="cl-summary-card" style="padding:16px 20px; max-width:220px; margin:0; flex:1;">
+                                <h3 id="driver-wallet-gross-collected" style="font-size:24px; margin-bottom:4px; color:#10b981;">Bs. 0</h3>
+                                <span style="font-size:11px;">Monto Total Cobrado</span>
+                            </div>
+                            <div class="cl-summary-card" style="padding:16px 20px; max-width:220px; margin:0; flex:1;">
+                                <h3 id="driver-wallet-net-earned" style="font-size:24px; margin-bottom:4px; color:#fdde12;">Bs. 0</h3>
+                                <span style="font-size:11px;">Mi Ganancia (80% Neto)</span>
+                            </div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
+                            <!-- Cash Balance Settlements -->
+                            <div style="background:rgba(0,0,0,0.2); border:1px solid var(--panel-border); padding:20px; border-radius:12px;">
+                                <h4 style="margin-bottom:12px; color:#fff; font-size:14px;"><i class="fa-solid fa-wallet text-yellow"></i> Balance de Canales</h4>
+                                <div class="stats-list">
+                                    <div class="stat-row">
+                                        <span>Efectivo Cobrado (en Mano)</span>
+                                        <strong id="driver-wallet-cash">Bs. 0</strong>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span>Cobros por QR Digital</span>
+                                        <strong id="driver-wallet-qr">Bs. 0</strong>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span>Cobros por Ticket de Crédito</span>
+                                        <strong id="driver-wallet-ticket">Bs. 0</strong>
+                                    </div>
+                                    <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08); margin:8px 0;">
+                                    <div class="stat-row" style="font-size:14px; font-weight:700;">
+                                        <span id="driver-wallet-settle-label">Saldo a recibir de central:</span>
+                                        <strong id="driver-wallet-settle-amount" style="color:#fdde12;">Bs. 0</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- List of completed rides -->
+                            <div style="background:rgba(0,0,0,0.2); border:1px solid var(--panel-border); padding:20px; border-radius:12px;">
+                                <h4 style="margin-bottom:12px; color:#fff; font-size:14px;"><i class="fa-solid fa-list-check"></i> Historial de Viajes Realizados</h4>
+                                <div style="max-height:220px; overflow-y:auto; font-size:12px;" id="driver-wallet-rides-list">
+                                    <!-- Dynamic rows -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
