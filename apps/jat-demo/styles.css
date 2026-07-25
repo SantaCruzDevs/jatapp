@@ -5,18 +5,18 @@
 :root {
     --bg-dark: #090c15;
     --panel-dark: rgba(15, 19, 37, 0.75);
-    --panel-border: rgba(253, 222, 18, 0.12);
+    --panel-border: rgba(245, 195, 0, 0.08);
     --text-primary: #f3f4f6;
     --text-muted: #a3aab8;
     
-    /* Curated Accent Palette (Motoservi JAT Corporate Identity) */
-    --accent-blue: #fdde12;
-    --accent-blue-glow: rgba(253, 222, 18, 0.25);
+    /* Curated Accent Palette (Motoservi JAT Corporate Identity) - Warm honey yellow */
+    --accent-blue: #f5c300;
+    --accent-blue-glow: rgba(245, 195, 0, 0.12);
     --brand-blue: #1e3583;
-    --brand-yellow: #fdde12;
+    --brand-yellow: #f5c300;
     
     --status-pending: #10b981;    /* Green */
-    --status-assigned: #fdde12;   /* Yellow */
+    --status-assigned: #eab308;   /* Warm Gold */
     --status-ontheway: #f97316;    /* Orange */
     --status-inprogress: #ef4444; /* Red */
     --status-completed: #8b5cf6;  /* Purple */
@@ -483,13 +483,13 @@ h1, h2, h3, .logo {
 
 .btn-primary {
     background-color: var(--accent-blue);
-    color: #fff;
-    box-shadow: 0 4px 12px var(--accent-blue-glow);
+    color: #090c15;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px var(--accent-blue-glow);
+    box-shadow: 0 6px 15px rgba(245, 195, 0, 0.2);
 }
 
 .btn-success {

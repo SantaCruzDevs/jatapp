@@ -58,6 +58,11 @@ All notable changes to this project will be documented in this file.
 - Corrección de deformación y escalado de imagen en pie de firma (Avatar del Sidebar):
     - Se agregaron las clases CSS `.sidebar-footer`, `.user-avatar`, `.user-info`, `.user-name` y `.user-role` en `styles.css` con anchos fijos de 42px, recorte circular por flex-shrink y recortes automáticos de nombres largos con elipsis para evitar que imágenes de alta resolución deformen el menú.
     - Se restableció el parámetro de redimensionamiento nativo en la URL de Unsplash (`w=200` y `fit=crop`) en todos los disparadores de rol de `app.js`.
+- Ajuste de contraste y suavizado del color amarillo corporativo:
+    - Se cambió el color amarillo neón chillón (`#fdde12`) por un amarillo ámbar cálido y corporativo (`#f5c300` en variables CSS y `#eab308` para textos) para evitar distorsiones visuales y mejorar la legibilidad.
+    - Se corrigieron los botones primarios para utilizar texto oscuro (`color: #090c15`) en lugar de blanco sobre fondo amarillo, logrando conformidad con estándares de legibilidad WCAG.
+    - Se suavizaron las sombras y resplandores neón a un brillo sutil (`rgba(245, 195, 0, 0.12)`).
+
 
 
 
