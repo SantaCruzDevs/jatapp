@@ -55,6 +55,10 @@ All notable changes to this project will be documented in this file.
     - Muestra estadísticas personales en tiempo real de viajes completados, recaudación bruta y ganancia neta (80%).
     - Cuenta con filtros por periodo (Hoy, Esta Semana, Este Mes) para ver el historial y balance de cobros.
     - Calcula el saldo a cobrar o rendir a la central cruzando el efectivo cobrado directamente contra las ganancias digitales acumuladas por QR/Ticket.
+- Corrección de deformación y escalado de imagen en pie de firma (Avatar del Sidebar):
+    - Se agregaron las clases CSS `.sidebar-footer`, `.user-avatar`, `.user-info`, `.user-name` y `.user-role` en `styles.css` con anchos fijos de 42px, recorte circular por flex-shrink y recortes automáticos de nombres largos con elipsis para evitar que imágenes de alta resolución deformen el menú.
+    - Se restableció el parámetro de redimensionamiento nativo en la URL de Unsplash (`w=200` y `fit=crop`) en todos los disparadores de rol de `app.js`.
+
 
 
 

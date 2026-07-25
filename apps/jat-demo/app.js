@@ -233,7 +233,7 @@ function selectPresentationRole(role) {
         activeRoleText.innerText = 'Operador Central';
         profileName.innerText = 'Operador Central 1';
         profileRole.innerText = 'Despachador Oficial';
-        profileImg.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=200';
+        profileImg.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
         
         // Hide Owner-only tabs
         if (navs.dashboard) navs.dashboard.style.display = 'none';
@@ -245,7 +245,7 @@ function selectPresentationRole(role) {
         activeRoleText.innerText = 'Motoquero (Field)';
         profileName.innerText = 'Carlos Méndez';
         profileRole.innerText = 'Motoquero JAT';
-        profileImg.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=200';
+        profileImg.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200';
         
         // Hide everything except Operations and Driver Balance tab
         if (navs.dashboard) navs.dashboard.style.display = 'none';
