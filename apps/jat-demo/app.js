@@ -204,6 +204,11 @@ function selectPresentationRole(role) {
     const profileImg = document.getElementById('sidebar-avatar');
     
     // Toggle active menu visibility based on role
+    const navReports = document.getElementById('nav-reports');
+    if (navReports) {
+        navReports.style.display = (role === 'admin') ? 'flex' : 'none';
+    }
+    
     if (role === 'admin') {
         activeRoleText.innerText = 'Administrador';
         profileName.innerText = 'Fabiana Pérez';

@@ -46,6 +46,8 @@ All notable changes to this project will be documented in this file.
 - Implementación de la sección financiera interactiva en el módulo de Reportes:
     - **Planilla de Clientes (Consumo Mensual):** Permite filtrar por empresa y muestra la planilla con el detalle de fecha, solicitante, ruta, forma de pago y tarifa de cada ticket consumido, junto con el total facturado acumulado para cobros.
     - **Liquidación de Motoqueros:** Muestra la planilla de servicios completados de cada móvil, calcula el reparto de ganancias del 80% (motoquero) y 20% (MotoJat), y cruza los métodos de pago (Efectivo en mano vs QR/Ticket digital) para determinar el balance neto de liquidación (Monto a Transferir o Rendir).
+- Restringida la pestaña de **Reportes & Analytics** de forma exclusiva para el rol **Administrador (Dueña)**: el enlace de acceso del menú lateral se oculta dinámicamente si se ingresa con el rol de Operador Central o Motoquero para proteger la información comercial sensible.
+
 
 
 
