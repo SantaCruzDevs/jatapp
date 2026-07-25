@@ -39,6 +39,8 @@ All notable changes to this project will be documented in this file.
 - Añadida generación dinámica de conductores al vuelo: si el operador busca y asigna un número de móvil no registrado en la lista mock de la demo (ej. Móvil 5), el sistema genera automáticamente un conductor con nombre "Juan Perez" manejando una moto "Navi ZZZ-456" y lo asigna al servicio para asegurar que la demo funcione con cualquier valor.
 - Ampliada la lista preestablecida de conductores a 15 motoqueros fijos con numeración de móvil del 1 al 15 para pruebas de asignación directas y consistentes.
 - Ajustado y acortado el texto del campo de tarifa a "Ajustar Tarifa (Bs.)" para optimizar el orden visual en el modal de asignación de choferes.
+- Corregido desbordamiento vertical de modales en CSS: se estableció una altura máxima (`max-height: 90vh`) con contenedor flex y barra de desplazamiento vertical interna en `.modal-body` para mantener las entradas superiores de tarifa y búsqueda de móvil visibles en pantalla en todo momento sin importar la cantidad de choferes disponibles.
+
 
 
 

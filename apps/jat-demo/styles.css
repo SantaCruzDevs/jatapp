@@ -979,6 +979,9 @@ h1, h2, h3, .logo {
     border-radius: 20px;
     width: 500px;
     max-width: 90%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     overflow: hidden;
 }
@@ -989,6 +992,7 @@ h1, h2, h3, .logo {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .modal-close {
@@ -1001,6 +1005,8 @@ h1, h2, h3, .logo {
 
 .modal-body {
     padding: 24px;
+    overflow-y: auto;
+    flex-grow: 1;
 }
 
 .modal-desc {
