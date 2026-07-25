@@ -69,6 +69,11 @@ All notable changes to this project will be documented in this file.
         - Si se arrastra a **Asignado** o **En Camino** (sin chofer previo), se despliega automáticamente el modal de asignación de motoqueros para resolver la entrega.
         - Si se arrastra a **Completado**, se abre de forma reactiva el modal de observaciones y selección de método de pago para resguardar la consistencia financiera.
         - Se conserva el funcionamiento de los botones tradicionales para ofrecer control redundante.
+- Incorporación de control de Comisión Central editable y pagos de Tickets en Reportes Administrativos:
+    - Se añadió un campo numérico interactivo `% Central` en la pestaña de Liquidación de Motoqueros para editar libremente la comisión que retiene la central (ej: 20%). El balance neto se recalcula automáticamente en tiempo real.
+    - Se añadió un desglose detallado mostrando cantidad de viajes y montos acumulados individualmente por canal (Efectivo, QR, y Ticket corporativo).
+    - Se incorporó un botón de acción **Pagar / Liquidar** que permite a la dueña saldar cuentas y procesar formalmente el desembolso de los créditos por ticket acumulados.
+
 
 
 

@@ -410,17 +410,21 @@
                                         <!-- Injected dynamically based on state.drivers -->
                                     </select>
                                 </div>
-                                <div class="cl-summary-card" style="padding:12px 20px; max-width:200px; margin:0;">
+                                <div style="width:120px;">
+                                    <label style="font-weight:700; margin-bottom:4px; display:block; color:#fff; font-size:12px;">% Central</label>
+                                    <input type="number" id="input-report-commission" value="20" min="0" max="100" style="width:100%; padding:8px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:13px; font-weight:700; text-align:center;">
+                                </div>
+                                <div class="cl-summary-card" style="padding:12px 20px; max-width:180px; margin:0;">
                                     <h3 id="report-driver-total-rides" style="font-size:20px; margin:0;">0</h3>
                                     <span style="font-size:10px;">Viajes Completados</span>
                                 </div>
-                                <div class="cl-summary-card" style="padding:12px 20px; max-width:200px; margin:0;">
+                                <div class="cl-summary-card" style="padding:12px 20px; max-width:180px; margin:0;">
                                     <h3 id="report-driver-total-collected" style="font-size:20px; margin:0; color:#10b981;">Bs. 0</h3>
                                     <span style="font-size:10px;">Total Recaudado</span>
                                 </div>
-                                <div class="cl-summary-card" style="padding:12px 20px; max-width:200px; margin:0;">
+                                <div class="cl-summary-card" style="padding:12px 20px; max-width:180px; margin:0;">
                                     <h3 id="report-driver-share" style="font-size:20px; margin:0; color:#eab308;">Bs. 0</h3>
-                                    <span style="font-size:10px;">Ganancia Chofer (80%)</span>
+                                    <span style="font-size:10px;" id="lbl-report-driver-share">Ganancia Chofer (80%)</span>
                                 </div>
                             </div>
 
@@ -429,25 +433,33 @@
                                     <h4 style="margin-bottom:12px; color:#fff; font-size:14px;"><i class="fa-solid fa-scale-balanced text-yellow"></i> Balance de Liquidación</h4>
                                     <div class="stats-list">
                                         <div class="stat-row">
-                                            <span>Cobrado en Efectivo (en mano)</span>
-                                            <strong id="report-driver-bal-cash">Bs. 0</strong>
+                                            <span>Cobrado en Efectivo</span>
+                                            <strong id="report-driver-bal-cash">Bs. 0 (0)</strong>
                                         </div>
                                         <div class="stat-row">
-                                            <span>Cobrado por QR (empresa)</span>
-                                            <strong id="report-driver-bal-qr">Bs. 0</strong>
+                                            <span>Cobrado por QR</span>
+                                            <strong id="report-driver-bal-qr">Bs. 0 (0)</strong>
                                         </div>
                                         <div class="stat-row">
-                                            <span>Cobrado por Ticket (crédito)</span>
-                                            <strong id="report-driver-bal-ticket">Bs. 0</strong>
+                                            <span>Cobrado por Ticket</span>
+                                            <strong id="report-driver-bal-ticket">Bs. 0 (0)</strong>
                                         </div>
                                         <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08); margin:8px 0;">
                                         <div class="stat-row" style="font-size:14px; font-weight:700;">
                                             <span id="report-driver-settle-label">Monto Neto a Pagar</span>
                                             <strong id="report-driver-settle-amount" style="color:#eab308;">Bs. 0</strong>
                                         </div>
+                                        <hr style="border:none; border-top:1px dashed rgba(255,255,255,0.08); margin:12px 0;">
+                                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                                            <div>
+                                                <span style="font-size:10px; color:var(--text-muted); display:block;">Comisión Central:</span>
+                                                <strong id="report-driver-commission-amount" style="color:#ff6b6b; font-size:13px;">Bs. 0</strong>
+                                            </div>
+                                            <button class="btn btn-primary btn-sm" id="btn-report-pay-driver" style="font-size:11px; padding:6px 12px;"><i class="fa-solid fa-hand-holding-dollar"></i> Pagar / Liquidar</button>
+                                        </div>
                                     </div>
                                     <small class="text-muted" style="font-size:10px; display:block; margin-top:10px; line-height:1.3;">
-                                        * La liquidación calcula: Ganancia del Motoquero (80% del total) menos el Efectivo que ya cobró directamente. Si el resultado es positivo, MotoJat le debe transferir; si es negativo, el conductor debe rendir cuentas a la central.
+                                        * La liquidación se calcula restando el Efectivo en mano de la ganancia neta correspondiente al motoquero.
                                     </small>
                                 </div>
 

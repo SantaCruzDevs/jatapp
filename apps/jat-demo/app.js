@@ -791,6 +791,36 @@ function initReportsNavigation() {
     if (selectDriver) {
         selectDriver.addEventListener('change', renderDriverReport);
     }
+
+    const inputCommission = document.getElementById('input-report-commission');
+    if (inputCommission) {
+        inputCommission.addEventListener('input', () => {
+            let val = parseFloat(inputCommission.value);
+            if (isNaN(val) || val < 0) val = 0;
+            if (val > 100) val = 100;
+            renderDriverReport();
+        });
+    }
+
+    const btnPay = document.getElementById('btn-report-pay-driver');
+    if (btnPay) {
+        btnPay.addEventListener('click', () => {
+            const selectEl = document.getElementById('select-report-driver');
+            const driverName = selectEl.options[selectEl.selectedIndex]?.text || 'Conductor';
+            
+            const commInput = document.getElementById('input-report-commission');
+            const commPct = parseFloat(commInput.value) || 0;
+            const driverRides = state.rides.filter(r => r.status === 'completed' && r.driver && r.driver.id === selectEl.value);
+            const ticketRides = driverRides.filter(r => r.paymentMethod === 'Ticket');
+            
+            if (ticketRides.length === 0) {
+                showToast('Liquidación Vacía', 'Este conductor no registra viajes completados por Ticket para pagar.', 'warning');
+                return;
+            }
+
+            showToast('Pago Registrado', `Se procesó la liquidación de ${ticketRides.length} tickets para ${driverName} aplicando un ${commPct}% de comisión central.`, 'success');
+        });
+    }
 }
 
 function populateDriverReportDropdown() {
@@ -864,15 +894,28 @@ function renderDriverReport() {
     const driverRides = state.rides.filter(r => r.status === 'completed' && r.driver && r.driver.id === driverId);
     
     let totalCollected = 0;
+    
     let cash = 0;
+    let cashCount = 0;
+    
     let qr = 0;
+    let qrCount = 0;
+    
     let ticket = 0;
+    let ticketCount = 0;
     
     driverRides.forEach(r => {
         totalCollected += r.fare;
-        if (r.paymentMethod === 'Efectivo') cash += r.fare;
-        else if (r.paymentMethod === 'QR') qr += r.fare;
-        else if (r.paymentMethod === 'Ticket') ticket += r.fare;
+        if (r.paymentMethod === 'Efectivo') {
+            cash += r.fare;
+            cashCount++;
+        } else if (r.paymentMethod === 'QR') {
+            qr += r.fare;
+            qrCount++;
+        } else if (r.paymentMethod === 'Ticket') {
+            ticket += r.fare;
+            ticketCount++;
+        }
         
         const row = document.createElement('div');
         row.style.display = 'flex';
@@ -886,16 +929,23 @@ function renderDriverReport() {
         ridesList.appendChild(row);
     });
     
-    const driverShare = Math.round(totalCollected * 0.80);
+    const commInput = document.getElementById('input-report-commission');
+    const commissionPercent = commInput ? (parseFloat(commInput.value) || 0) : 20;
+    const driverPercent = 100 - commissionPercent;
+    
+    const driverShare = Math.round(totalCollected * (driverPercent / 100));
+    const commissionAmount = totalCollected - driverShare;
     const settleAmount = driverShare - cash;
     
     document.getElementById('report-driver-total-rides').innerText = driverRides.length;
     document.getElementById('report-driver-total-collected').innerText = `Bs. ${totalCollected}`;
     document.getElementById('report-driver-share').innerText = `Bs. ${driverShare}`;
+    document.getElementById('lbl-report-driver-share').innerText = `Ganancia Chofer (${driverPercent}%)`;
     
-    document.getElementById('report-driver-bal-cash').innerText = `Bs. ${cash}`;
-    document.getElementById('report-driver-bal-qr').innerText = `Bs. ${qr}`;
-    document.getElementById('report-driver-bal-ticket').innerText = `Bs. ${ticket}`;
+    document.getElementById('report-driver-bal-cash').innerText = `Bs. ${cash} (${cashCount} viajes)`;
+    document.getElementById('report-driver-bal-qr').innerText = `Bs. ${qr} (${qrCount} viajes)`;
+    document.getElementById('report-driver-bal-ticket').innerText = `Bs. ${ticket} (${ticketCount} viajes)`;
+    document.getElementById('report-driver-commission-amount').innerText = `Bs. ${commissionAmount}`;
     
     const labelEl = document.getElementById('report-driver-settle-label');
     const amountEl = document.getElementById('report-driver-settle-amount');
