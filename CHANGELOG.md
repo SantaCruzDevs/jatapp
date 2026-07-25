@@ -74,6 +74,10 @@ All notable changes to this project will be documented in this file.
     - Se añadió un campo numérico interactivo `% Central` para editar en tiempo real la comisión que retiene la central (ej: 20%). El balance neto se recalcula automáticamente.
     - El balance muestra el desglose detallado de todos los viajes y montos acumulados por canal (Efectivo, QR, y Ticket corporativo) de forma independiente.
     - Se integró cancelación y liquidación de Tickets individuales en el historial de carreras: cada carrera por Ticket muestra un estado (`Pendiente` o `Liquidado`) con un botón **Pagar** exclusivo para saldar ese ticket de forma individual, además del botón general **Liquidar Tickets** en la tarjeta de balance para cancelar todos a la vez.
+- Solución de bloqueo e inactividad en navegadores móviles (iOS/Android):
+    - Se protegieron todas las lecturas y escrituras de `localStorage` con bloques `try-catch` para evitar excepciones de seguridad en navegadores móviles que navegan en modo de incógnito o privado, lo cual congelaba la ejecución del motor JS.
+    - Se inyectó un manejador de errores global `window.onerror` al inicio de la aplicación para reportar visualmente cualquier alerta/excepción en el celular durante pruebas de campo.
+
 
 
 

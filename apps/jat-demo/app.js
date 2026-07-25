@@ -1,6 +1,9 @@
-// ==========================================================================
-// JATapp — Live Collaborative Presentation Engine (Vanilla JS + LocalStorage Realtime Sync)
-// ==========================================================================
+// Global error boundary for mobile troubleshooting
+window.onerror = function(message, source, lineno, colno, error) {
+    alert("Mobile JATapp Error: " + message + " at " + source + ":" + lineno);
+    return false;
+};
+
 
 const statusLabels = {
     pending: 'Pendiente',
@@ -98,26 +101,31 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Load state from local storage or set defaults
 function loadStateFromStorage() {
-    const val = localStorage.getItem('jatapp_demo_state');
-    if (val) {
-        try {
+    try {
+        const val = localStorage.getItem('jatapp_demo_state');
+        if (val) {
             state = JSON.parse(val);
             // If they are on an old state or missing drivers, force reset!
             if (!state.drivers || state.drivers.length < 15 || !state.drivers[0].movil || state.drivers[0].movil === '15') {
                 state = JSON.parse(JSON.stringify(DEFAULT_STATE));
                 saveStateToStorage();
             }
-        } catch (e) {
+        } else {
             state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+            saveStateToStorage();
         }
-    } else {
+    } catch (e) {
+        console.warn("Storage item fetch failed, using fallback state.", e);
         state = JSON.parse(JSON.stringify(DEFAULT_STATE));
-        saveStateToStorage();
     }
 }
 
 function saveStateToStorage() {
-    localStorage.setItem('jatapp_demo_state', JSON.stringify(state));
+    try {
+        localStorage.setItem('jatapp_demo_state', JSON.stringify(state));
+    } catch (e) {
+        console.warn("Storage item save failed.", e);
+    }
 }
 
 // Live Clock UI
