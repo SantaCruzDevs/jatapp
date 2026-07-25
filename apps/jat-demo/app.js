@@ -39,9 +39,11 @@ const DEFAULT_STATE = {
         Ticket: 410
     },
     drivers: [
-        { id: 'DRV-01', name: 'Carlos Méndez', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150', rating: 4.8, distance: '1.2 km', status: 'available', completed: 14, zone: 'Centro', vehicle: 'Vespa SCZ-228' },
-        { id: 'DRV-02', name: 'Jorge Ribera', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150', rating: 4.9, distance: '0.8 km', status: 'available', completed: 18, zone: 'Equipetrol', vehicle: 'Honda SCZ-994' },
-        { id: 'DRV-03', name: 'Pedro Gómez', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150', rating: 4.6, distance: '2.5 km', status: 'busy', completed: 9, zone: 'Norte', vehicle: 'Yamaha SCZ-441' }
+        { id: 'DRV-01', movil: '15', name: 'Carlos Méndez', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150', rating: 4.8, distance: '1.2 km', status: 'available', completed: 14, zone: 'Centro', vehicle: 'Vespa SCZ-228' },
+        { id: 'DRV-02', movil: '28', name: 'Jorge Ribera', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150', rating: 4.9, distance: '0.8 km', status: 'available', completed: 18, zone: 'Equipetrol', vehicle: 'Honda SCZ-994' },
+        { id: 'DRV-03', movil: '9', name: 'Pedro Gómez', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150', rating: 4.6, distance: '2.5 km', status: 'busy', completed: 9, zone: 'Norte', vehicle: 'Yamaha SCZ-441' },
+        { id: 'DRV-04', movil: '42', name: 'Mario Justiniano', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150', rating: 4.7, distance: '1.9 km', status: 'available', completed: 11, zone: 'Sur', vehicle: 'Suzuki SCZ-112' },
+        { id: 'DRV-05', movil: '73', name: 'Hugo Banzer', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=150', rating: 4.5, distance: '3.1 km', status: 'available', completed: 8, zone: 'Este', vehicle: 'TVS SCZ-550' }
     ],
     notifications: [
         { title: 'Sistema Inicializado', desc: 'Entorno de Demostración Comercial Listo.', time: '09:00', type: 'success' }
@@ -323,30 +325,77 @@ function openAssignModal() {
         document.getElementById('input-assign-fare').value = ride.fare;
     }
     
-    const container = document.getElementById('drivers-assign-container');
-    container.innerHTML = '';
+    const searchInput = document.getElementById('input-assign-movil-search');
+    searchInput.value = '';
     
-    state.drivers.forEach(driver => {
-        const card = document.createElement('div');
-        card.className = 'driver-assign-card';
-        card.innerHTML = `
-            <div class="driver-assign-info-wrapper">
-                <img src="${driver.avatar}" alt="Driver avatar" class="driver-list-avatar">
-                <div class="driver-assign-info">
-                    <h4>${driver.name} (${driver.vehicle})</h4>
-                    <div class="driver-assign-meta">
-                        <span><i class="fa-solid fa-star text-yellow"></i> ${driver.rating}</span>
-                        <span><i class="fa-solid fa-motorcycle"></i> Zona: ${driver.zone}</span>
-                        <span>Hoy: ${driver.completed}</span>
+    const renderFilteredDrivers = (filterText = '') => {
+        const container = document.getElementById('drivers-assign-container');
+        container.innerHTML = '';
+        
+        const filtered = state.drivers.filter(d => {
+            if (!filterText) return true;
+            return d.movil.includes(filterText) || d.name.toLowerCase().includes(filterText.toLowerCase());
+        });
+        
+        filtered.forEach(driver => {
+            const card = document.createElement('div');
+            card.className = 'driver-assign-card';
+            card.innerHTML = `
+                <div class="driver-assign-info-wrapper">
+                    <img src="${driver.avatar}" alt="Driver avatar" class="driver-list-avatar">
+                    <div class="driver-assign-info">
+                        <h4>Móvil ${driver.movil} — ${driver.name}</h4>
+                        <div class="driver-assign-meta">
+                            <span><i class="fa-solid fa-star text-yellow"></i> ${driver.rating}</span>
+                            <span><i class="fa-solid fa-motorcycle"></i> ${driver.vehicle}</span>
+                            <span>Zona: ${driver.zone}</span>
+                            <span>Hoy: ${driver.completed}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <span class="badge badge-success">${driver.status}</span>
-        `;
+                <span class="badge ${driver.status === 'available' ? 'badge-success' : 'badge-danger'}">${driver.status}</span>
+            `;
+            
+            card.addEventListener('click', () => assignDriver(driver));
+            container.appendChild(card);
+        });
         
-        card.addEventListener('click', () => assignDriver(driver));
-        container.appendChild(card);
+        if (filtered.length === 0) {
+            container.innerHTML = '<div class="text-muted" style="text-align:center; padding:20px; font-size:13px;">No se encontraron conductores con ese número de móvil o nombre.</div>';
+        }
+    };
+    
+    // Rebind event listeners to search input
+    const newSearchInput = searchInput.cloneNode(true);
+    searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+    
+    newSearchInput.addEventListener('input', (e) => {
+        renderFilteredDrivers(e.target.value.trim());
     });
+    
+    newSearchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const query = e.target.value.trim();
+            if (query) {
+                // Find exact match by movil number
+                const match = state.drivers.find(d => d.movil === query);
+                if (match) {
+                    assignDriver(match);
+                } else {
+                    // Try partial match
+                    const partialMatch = state.drivers.find(d => d.movil.includes(query) || d.name.toLowerCase().includes(query.toLowerCase()));
+                    if (partialMatch) {
+                        assignDriver(partialMatch);
+                    } else {
+                        showToast('Sin Resultados', `No se encontró el Móvil ${query}`, 'warning');
+                    }
+                }
+            }
+        }
+    });
+    
+    renderFilteredDrivers();
+    setTimeout(() => newSearchInput.focus(), 100);
 }
 
 function assignDriver(driver) {

@@ -35,6 +35,8 @@ All notable changes to this project will be documented in this file.
 - Integración funcional del botón "Iniciar Viaje" en el flujo del Kanban de operaciones, registrando el hito correspondiente con tiempos de retraso simulados en la línea de tiempo.
 - Rediseño del botón "Nueva Solicitud" para abrir un formulario modal interactivo (`modal-new-ride`) que permite al operador central configurar el cliente, solicitante, origen, destino, prioridad y editar/personalizar la tarifa (Bs.) del viaje antes de crearlo.
 - Añadida capacidad para modificar la tarifa en estado "Pendiente" desde el modal de asignación de chofer (`modal-assign`) justo antes de delegar el servicio, con registro automático de la modificación en la línea de tiempo.
+- Integración de campo de búsqueda por "Número de Móvil" en el modal de asignación para filtrado en tiempo real de conductores y asignación instantánea al presionar Enter.
+
 
 
 
