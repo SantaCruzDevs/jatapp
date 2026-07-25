@@ -345,47 +345,114 @@
 
                 <!-- MODULE 10: REPORTS -->
                 <section id="module-reports" class="module-tab">
-                    <div class="reports-grid">
-                        <div class="report-card">
-                            <h3><i class="fa-solid fa-chart-line"></i> Servicios por Día de la Semana</h3>
-                            <div class="mock-chart-bar-container">
-                                <div class="bar-chart">
-                                    <div class="chart-bar" style="height: 60%;" data-label="Lun"><span>15</span></div>
-                                    <div class="chart-bar" style="height: 80%;" data-label="Mar"><span>20</span></div>
-                                    <div class="chart-bar" style="height: 95%;" data-label="Mie"><span>24</span></div>
-                                    <div class="chart-bar" style="height: 70%;" data-label="Jue"><span>18</span></div>
-                                    <div class="chart-bar" style="height: 90%;" data-label="Vie"><span>23</span></div>
-                                    <div class="chart-bar" style="height: 40%;" data-label="Sab"><span>10</span></div>
-                                </div>
+                    <div class="reports-container" style="background:var(--panel-dark); border:1px solid var(--panel-border); border-radius:20px; padding:24px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:16px;">
+                            <h2>Planillas & Reportes Financieros</h2>
+                            <div style="display:flex; gap:12px;">
+                                <button class="btn btn-primary btn-sm" id="btn-tab-report-company" style="font-size:12px; padding:6px 12px;">Planilla de Clientes</button>
+                                <button class="btn btn-outline btn-sm" id="btn-tab-report-driver" style="font-size:12px; padding:6px 12px;">Liquidación de Motoqueros</button>
                             </div>
                         </div>
 
-                        <div class="report-card">
-                            <h3><i class="fa-solid fa-clock-rotate-left"></i> Tiempo Promedio de Respuesta</h3>
-                            <div class="stat-large">
-                                <span class="number text-green" id="stat-avg-response">3.4 min</span>
-                                <span class="subtext">Desde pedido hasta arribo de Driver</span>
+                        <!-- SUB-TAB 1: COMPANY STATEMENT -->
+                        <div id="report-company-section">
+                            <div style="display:flex; gap:16px; align-items:center; margin-bottom:20px; flex-wrap:wrap;">
+                                <div style="flex:1; min-width:200px;">
+                                    <label style="font-weight:700; margin-bottom:4px; display:block; color:#fff; font-size:12px;">Seleccionar Empresa Cliente</label>
+                                    <select id="select-report-company" style="width:100%; padding:8px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:13px;">
+                                        <option value="Banco Ganadero S.A.">Banco Ganadero S.A.</option>
+                                        <option value="Farmacorp S.A.">Farmacorp S.A.</option>
+                                        <option value="Hospital Foianini S.A.">Hospital Foianini S.A.</option>
+                                        <option value="Laboratorio Chávez Central">Laboratorio Chávez Central</option>
+                                        <option value="Universidad Privada (UPSA)">Universidad Privada (UPSA)</option>
+                                    </select>
+                                </div>
+                                <div class="cl-summary-card" style="padding:12px 20px; max-width:220px; margin:0;">
+                                    <h3 id="report-company-total-rides" style="font-size:20px; margin:0;">0</h3>
+                                    <span style="font-size:10px;">Servicios Consumidos</span>
+                                </div>
+                                <div class="cl-summary-card" style="padding:12px 20px; max-width:220px; margin:0;">
+                                    <h3 id="report-company-total-amount" style="font-size:20px; margin:0; color:#fdde12;">Bs. 0</h3>
+                                    <span style="font-size:10px;">Consumo Total del Mes</span>
+                                </div>
                             </div>
-                            <div class="stats-list">
-                                <div class="stat-row">
-                                    <span>Asignación Operador</span>
-                                    <strong>45 seg</strong>
-                                </div>
-                                <div class="stat-row">
-                                    <span>Tránsito de Motoquero</span>
-                                    <strong>2.5 min</strong>
-                                </div>
+                            
+                            <div class="billing-table-wrapper" style="margin-top:16px;">
+                                <table class="billing-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID Ticket</th>
+                                            <th>Fecha</th>
+                                            <th>Solicitante</th>
+                                            <th>Ruta (Origen ➔ Destino)</th>
+                                            <th>Forma de Pago</th>
+                                            <th>Tarifa</th>
+                                            <th>Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="report-company-table-body">
+                                        <!-- Injected dynamically -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 
-                        <div class="report-card">
-                            <h3><i class="fa-solid fa-cash-register"></i> Ajustes de Tarifa Recientes</h3>
-                            <div class="stat-large">
-                                <span class="number text-orange" id="stat-adjustment-ratio">8.2%</span>
-                                <span class="subtext">Porcentaje de viajes con incremento de tarifa</span>
+                        <!-- SUB-TAB 2: DRIVER LIQUIDATION -->
+                        <div id="report-driver-section" style="display:none;">
+                            <div style="display:flex; gap:16px; align-items:center; margin-bottom:20px; flex-wrap:wrap;">
+                                <div style="flex:1; min-width:200px;">
+                                    <label style="font-weight:700; margin-bottom:4px; display:block; color:#fff; font-size:12px;">Seleccionar Motoquero</label>
+                                    <select id="select-report-driver" style="width:100%; padding:8px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:13px;">
+                                        <!-- Injected dynamically based on state.drivers -->
+                                    </select>
+                                </div>
+                                <div class="cl-summary-card" style="padding:12px 20px; max-width:200px; margin:0;">
+                                    <h3 id="report-driver-total-rides" style="font-size:20px; margin:0;">0</h3>
+                                    <span style="font-size:10px;">Viajes Completados</span>
+                                </div>
+                                <div class="cl-summary-card" style="padding:12px 20px; max-width:200px; margin:0;">
+                                    <h3 id="report-driver-total-collected" style="font-size:20px; margin:0; color:#10b981;">Bs. 0</h3>
+                                    <span style="font-size:10px;">Total Recaudado</span>
+                                </div>
+                                <div class="cl-summary-card" style="padding:12px 20px; max-width:200px; margin:0;">
+                                    <h3 id="report-driver-share" style="font-size:20px; margin:0; color:#fdde12;">Bs. 0</h3>
+                                    <span style="font-size:10px;">Ganancia Chofer (80%)</span>
+                                </div>
                             </div>
-                            <div class="stats-list" id="adjustments-report-list">
-                                <!-- Recents injected here -->
+
+                            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin-bottom:24px;">
+                                <div style="background:rgba(0,0,0,0.2); border:1px solid var(--panel-border); padding:20px; border-radius:12px;">
+                                    <h4 style="margin-bottom:12px; color:#fff; font-size:14px;"><i class="fa-solid fa-scale-balanced text-yellow"></i> Balance de Liquidación</h4>
+                                    <div class="stats-list">
+                                        <div class="stat-row">
+                                            <span>Cobrado en Efectivo (en mano)</span>
+                                            <strong id="report-driver-bal-cash">Bs. 0</strong>
+                                        </div>
+                                        <div class="stat-row">
+                                            <span>Cobrado por QR (empresa)</span>
+                                            <strong id="report-driver-bal-qr">Bs. 0</strong>
+                                        </div>
+                                        <div class="stat-row">
+                                            <span>Cobrado por Ticket (crédito)</span>
+                                            <strong id="report-driver-bal-ticket">Bs. 0</strong>
+                                        </div>
+                                        <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08); margin:8px 0;">
+                                        <div class="stat-row" style="font-size:14px; font-weight:700;">
+                                            <span id="report-driver-settle-label">Monto Neto a Pagar</span>
+                                            <strong id="report-driver-settle-amount" style="color:#fdde12;">Bs. 0</strong>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted" style="font-size:10px; display:block; margin-top:10px; line-height:1.3;">
+                                        * La liquidación calcula: Ganancia del Motoquero (80% del total) menos el Efectivo que ya cobró directamente. Si el resultado es positivo, MotoJat le debe transferir; si es negativo, el conductor debe rendir cuentas a la central.
+                                    </small>
+                                </div>
+
+                                <div style="background:rgba(0,0,0,0.2); border:1px solid var(--panel-border); padding:20px; border-radius:12px;">
+                                    <h4 style="margin-bottom:12px; color:#fff; font-size:14px;"><i class="fa-solid fa-list-check"></i> Detalle de Carreras Realizadas</h4>
+                                    <div style="max-height:180px; overflow-y:auto; font-size:12px;" id="report-driver-rides-list">
+                                        <!-- Injected dynamically -->
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

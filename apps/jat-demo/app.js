@@ -73,6 +73,7 @@ window.addEventListener('DOMContentLoaded', () => {
     initDemoController();
     initHelpCenter();
     initNotificationDropdown();
+    initReportsNavigation();
     
     // Initial clock update
     updateClock();
@@ -711,28 +712,168 @@ function renderBilling() {
     });
 }
 
-// Render Reports
-function renderReports() {
-    const list = document.getElementById('adjustments-report-list');
-    list.innerHTML = '';
+// Hook reports dropdowns and tabs
+function initReportsNavigation() {
+    const btnCompany = document.getElementById('btn-tab-report-company');
+    const btnDriver = document.getElementById('btn-tab-report-driver');
+    const secCompany = document.getElementById('report-company-section');
+    const secDriver = document.getElementById('report-driver-section');
     
-    let count = 0;
-    state.rides.forEach(ride => {
-        ride.adjustments.forEach(adj => {
-            count++;
-            const row = document.createElement('div');
-            row.className = 'stat-row';
-            row.innerHTML = `
-                <span>${ride.company} (${ride.id}) - ${adj.type}</span>
-                <strong class="text-orange">+Bs. ${adj.amount}</strong>
-            `;
-            list.appendChild(row);
+    if (btnCompany && btnDriver) {
+        btnCompany.addEventListener('click', () => {
+            btnCompany.className = 'btn btn-primary btn-sm';
+            btnDriver.className = 'btn btn-outline btn-sm';
+            secCompany.style.display = 'block';
+            secDriver.style.display = 'none';
+        });
+        btnDriver.addEventListener('click', () => {
+            btnDriver.className = 'btn btn-primary btn-sm';
+            btnCompany.className = 'btn btn-outline btn-sm';
+            secCompany.style.display = 'none';
+            secDriver.style.display = 'block';
+            populateDriverReportDropdown();
+            renderDriverReport();
+        });
+    }
+    
+    const selectCompany = document.getElementById('select-report-company');
+    if (selectCompany) {
+        selectCompany.addEventListener('change', renderCompanyReport);
+    }
+    
+    const selectDriver = document.getElementById('select-report-driver');
+    if (selectDriver) {
+        selectDriver.addEventListener('change', renderDriverReport);
+    }
+}
+
+function populateDriverReportDropdown() {
+    const select = document.getElementById('select-report-driver');
+    if (!select) return;
+    const currentVal = select.value;
+    select.innerHTML = '';
+    state.drivers.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.innerText = `Móvil ${d.movil} — ${d.name}`;
+        select.appendChild(opt);
+    });
+    if (currentVal && state.drivers.some(d => d.id === currentVal)) {
+        select.value = currentVal;
+    }
+}
+
+function renderCompanyReport() {
+    const selectEl = document.getElementById('select-report-company');
+    if (!selectEl) return;
+    const company = selectEl.value;
+    const tbody = document.getElementById('report-company-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    const completedRides = state.rides.filter(r => r.status === 'completed' && r.company === company);
+    
+    let totalFare = 0;
+    completedRides.forEach(r => {
+        totalFare += r.fare;
+        const tr = document.createElement('tr');
+        const today = new Date().toISOString().split('T')[0];
+        tr.innerHTML = `
+            <td><strong>${r.id}</strong></td>
+            <td>${today}</td>
+            <td>${r.requester}</td>
+            <td><small>${r.pickup} ➔ ${r.destination}</small></td>
+            <td><span class="badge badge-info">${r.paymentMethod || 'Ticket'}</span></td>
+            <td><strong>Bs. ${r.fare}</strong></td>
+            <td>
+                <button class="btn btn-outline btn-sm" id="btn-report-view-ticket-${r.id}"><i class="fa-regular fa-eye"></i> Ver</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+        
+        document.getElementById(`btn-report-view-ticket-${r.id}`).addEventListener('click', () => {
+            openTicketModal(r);
         });
     });
     
-    if (count === 0) {
-        list.innerHTML = '<div class="text-muted" style="font-size:12px; text-align:center; padding:10px;">Sin ajustes reportados hoy.</div>';
+    document.getElementById('report-company-total-rides').innerText = completedRides.length;
+    document.getElementById('report-company-total-amount').innerText = `Bs. ${totalFare}`;
+    
+    if (completedRides.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">No se registraron consumos para esta empresa en el periodo actual.</td></tr>`;
     }
+}
+
+function renderDriverReport() {
+    const selectEl = document.getElementById('select-report-driver');
+    if (!selectEl || !selectEl.value) return;
+    const driverId = selectEl.value;
+    const ridesList = document.getElementById('report-driver-rides-list');
+    if (!ridesList) return;
+    ridesList.innerHTML = '';
+    
+    const driver = state.drivers.find(d => d.id === driverId);
+    if (!driver) return;
+    
+    const driverRides = state.rides.filter(r => r.status === 'completed' && r.driver && r.driver.id === driverId);
+    
+    let totalCollected = 0;
+    let cash = 0;
+    let qr = 0;
+    let ticket = 0;
+    
+    driverRides.forEach(r => {
+        totalCollected += r.fare;
+        if (r.paymentMethod === 'Efectivo') cash += r.fare;
+        else if (r.paymentMethod === 'QR') qr += r.fare;
+        else if (r.paymentMethod === 'Ticket') ticket += r.fare;
+        
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.justify = 'space-between';
+        row.style.padding = '8px 0';
+        row.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        row.innerHTML = `
+            <span>${r.id} (${r.company})</span>
+            <strong>Bs. ${r.fare} <small class="text-muted">(${r.paymentMethod || 'Ticket'})</small></strong>
+        `;
+        ridesList.appendChild(row);
+    });
+    
+    const driverShare = Math.round(totalCollected * 0.80);
+    const settleAmount = driverShare - cash;
+    
+    document.getElementById('report-driver-total-rides').innerText = driverRides.length;
+    document.getElementById('report-driver-total-collected').innerText = `Bs. ${totalCollected}`;
+    document.getElementById('report-driver-share').innerText = `Bs. ${driverShare}`;
+    
+    document.getElementById('report-driver-bal-cash').innerText = `Bs. ${cash}`;
+    document.getElementById('report-driver-bal-qr').innerText = `Bs. ${qr}`;
+    document.getElementById('report-driver-bal-ticket').innerText = `Bs. ${ticket}`;
+    
+    const labelEl = document.getElementById('report-driver-settle-label');
+    const amountEl = document.getElementById('report-driver-settle-amount');
+    
+    if (settleAmount >= 0) {
+        labelEl.innerText = 'Monto Neto a Transferir al Motoquero:';
+        amountEl.innerText = `Bs. ${settleAmount}`;
+        amountEl.className = 'text-green';
+    } else {
+        labelEl.innerText = 'Monto Neto a Rendir por el Motoquero:';
+        amountEl.innerText = `Bs. ${Math.abs(settleAmount)}`;
+        amountEl.className = 'text-orange';
+    }
+    
+    if (driverRides.length === 0) {
+        ridesList.innerHTML = '<div class="text-muted" style="text-align:center; padding:20px;">Este conductor no registra viajes completados.</div>';
+    }
+}
+
+// Render Reports
+function renderReports() {
+    renderCompanyReport();
+    populateDriverReportDropdown();
+    renderDriverReport();
 }
 
 // Render Dashboard Activity Feed

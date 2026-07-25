@@ -43,6 +43,10 @@ All notable changes to this project will be documented in this file.
 - Corrección de cálculo de tarifa en ticket digital: se eliminó la sobreescritura de tarifa fija en el paso 6 de la simulación guiada para que se sumen correctamente los montos base y los recargos por desvío de ruta (ej: totalizando Bs. 39 en lugar de Bs. 35).
 - Actualizado el nombre de cabecera en el ticket digital de "MOTOJAT LOGISTICS S.R.L." a "MotoJat" a solicitud del cliente.
 - Rediseño de identidad corporativa en la Demo JATapp: se ajustaron las variables CSS de color para alinearse con los colores oficiales de **Motoservi JAT** (Azul Real `#1e3583` y Amarillo Brillante `#fdde12`) e integrado el logo estilizado oficial con el eslogan "Justo a Tiempo" en la pantalla de bienvenida y barra lateral de la plataforma.
+- Implementación de la sección financiera interactiva en el módulo de Reportes:
+    - **Planilla de Clientes (Consumo Mensual):** Permite filtrar por empresa y muestra la planilla con el detalle de fecha, solicitante, ruta, forma de pago y tarifa de cada ticket consumido, junto con el total facturado acumulado para cobros.
+    - **Liquidación de Motoqueros:** Muestra la planilla de servicios completados de cada móvil, calcula el reparto de ganancias del 80% (motoquero) y 20% (MotoJat), y cruza los métodos de pago (Efectivo en mano vs QR/Ticket digital) para determinar el balance neto de liquidación (Monto a Transferir o Rendir).
+
 
 
 
