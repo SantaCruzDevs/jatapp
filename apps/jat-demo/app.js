@@ -2,6 +2,13 @@
 // JATapp — Live Collaborative Presentation Engine (Vanilla JS + LocalStorage Realtime Sync)
 // ==========================================================================
 
+const statusLabels = {
+    pending: 'Pendiente',
+    assigned: 'Asignado',
+    ontheway: 'En Camino',
+    completed: 'Completado'
+};
+
 // Initial default state
 const DEFAULT_STATE = {
     rides: [
@@ -11,19 +18,26 @@ const DEFAULT_STATE = {
             requester: 'Ing. Fabiola Torrez',
             pickup: 'Av. Las Américas 450',
             destination: 'Equipetrol Calle 8 Norte',
-            initialFare: 150,
-            fare: 150,
+            initialFare: 35,
+            fare: 35,
             waitTime: 0,
             elapsedTime: 2, // in minutes
-            status: 'pending', // pending, assigned, ontheway, inprogress, completed
+            status: 'pending', // pending, assigned, ontheway, completed
             priority: 'high',
             driver: null,
             adjustments: [],
+            paymentMethod: null,
+            observations: '',
             timeline: [
                 { time: '09:15', label: 'Solicitud Recibida', desc: 'Ingreso al sistema desde Farmacorp S.A.' }
             ]
         }
     ],
+    balances: {
+        Efectivo: 350,
+        QR: 480,
+        Ticket: 410
+    },
     drivers: [
         { id: 'DRV-01', name: 'Carlos Méndez', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150', rating: 4.8, distance: '1.2 km', status: 'available', completed: 14, zone: 'Centro', vehicle: 'Vespa SCZ-228' },
         { id: 'DRV-02', name: 'Jorge Ribera', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150', rating: 4.9, distance: '0.8 km', status: 'available', completed: 18, zone: 'Equipetrol', vehicle: 'Honda SCZ-994' },
@@ -236,17 +250,23 @@ function renderKanban() {
         pending: document.getElementById('container-pending'),
         assigned: document.getElementById('container-assigned'),
         ontheway: document.getElementById('container-ontheway'),
-        inprogress: document.getElementById('container-inprogress'),
         completed: document.getElementById('container-completed')
     };
     
     // Reset columns
-    Object.values(containers).forEach(c => c.innerHTML = '');
+    Object.values(containers).forEach(c => {
+        if (c) c.innerHTML = '';
+    });
     
     // Count objects
-    const counts = { pending: 0, assigned: 0, ontheway: 0, inprogress: 0, completed: 0 };
+    const counts = { pending: 0, assigned: 0, ontheway: 0, completed: 0 };
     
     state.rides.forEach(ride => {
+        // Fallback for old status
+        if (ride.status === 'inprogress') {
+            ride.status = 'ontheway';
+        }
+        
         counts[ride.status]++;
         
         const card = document.createElement('div');
@@ -261,7 +281,7 @@ function renderKanban() {
                 <div><i class="fa-solid fa-flag-checkered text-red"></i> <b>Destino:</b> ${ride.destination}</div>
             </div>
             <div class="card-footer">
-                <span class="card-fare">$ ${ride.fare}</span>
+                <span class="card-fare">Bs. ${ride.fare}</span>
                 <span class="waiting-timer timer-green" id="timer-badge-${ride.id}">
                     <i class="fa-regular fa-clock"></i> Espera: ${Math.floor(ride.elapsedTime)}m
                 </span>
@@ -269,15 +289,16 @@ function renderKanban() {
         `;
         
         card.addEventListener('click', () => handleRideCardClick(ride));
-        containers[ride.status].appendChild(card);
+        if (containers[ride.status]) {
+            containers[ride.status].appendChild(card);
+        }
     });
     
     // Update column counters
-    document.getElementById('count-pending').innerText = counts.pending;
-    document.getElementById('count-assigned').innerText = counts.assigned;
-    document.getElementById('count-ontheway').innerText = counts.ontheway;
-    document.getElementById('count-inprogress').innerText = counts.inprogress;
-    document.getElementById('count-completed').innerText = counts.completed;
+    if (document.getElementById('count-pending')) document.getElementById('count-pending').innerText = counts.pending;
+    if (document.getElementById('count-assigned')) document.getElementById('count-assigned').innerText = counts.assigned;
+    if (document.getElementById('count-ontheway')) document.getElementById('count-ontheway').innerText = counts.ontheway;
+    if (document.getElementById('count-completed')) document.getElementById('count-completed').innerText = counts.completed;
 }
 
 function handleRideCardClick(ride) {
@@ -352,6 +373,15 @@ function openMonitoringModal(ride) {
     modal.classList.add('active');
     
     const container = document.getElementById('monitoring-details-body');
+    
+    // Calculate simulated delay tracking for presentation
+    let delayText = '';
+    if (ride.status === 'assigned') {
+        delayText = ' <small class="text-orange" style="display:block; margin-top:4px; font-weight:500;"><i class="fa-solid fa-clock"></i> Esperando recogida...</small>';
+    } else if (ride.status === 'ontheway') {
+        delayText = ' <small class="text-green" style="display:block; margin-top:4px; font-weight:500;"><i class="fa-solid fa-hourglass-half"></i> En tránsito al destino</small>';
+    }
+    
     container.innerHTML = `
         <div class="stats-list">
             <div class="stat-row"><span>ID del Viaje</span><strong>${ride.id}</strong></div>
@@ -359,10 +389,10 @@ function openMonitoringModal(ride) {
             <div class="stat-row"><span>Pasajero / Solicitante</span><strong>${ride.requester}</strong></div>
             <div class="stat-row"><span>Motoquero Asignado</span><strong>${ride.driver?.name || 'N/A'}</strong></div>
             <div class="stat-row"><span>Vehículo / Placa</span><strong>${ride.driver?.vehicle || 'N/A'}</strong></div>
-            <div class="stat-row"><span>Estado Actual</span><span class="badge badge-info">${ride.status}</span></div>
+            <div class="stat-row"><span>Estado Actual</span><div><span class="badge badge-info">${statusLabels[ride.status] || ride.status}</span>${delayText}</div></div>
             <div class="stat-row"><span>Origen</span><strong>${ride.pickup}</strong></div>
             <div class="stat-row"><span>Destino</span><strong>${ride.destination}</strong></div>
-            <div class="stat-row"><span>Tarifa Actual</span><strong>$ ${ride.fare}</strong></div>
+            <div class="stat-row"><span>Tarifa Actual</span><strong>Bs. ${ride.fare}</strong></div>
         </div>
         
         <div class="admin-panel" style="margin-top:20px; padding: 12px; background: rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.1)">
@@ -372,16 +402,15 @@ function openMonitoringModal(ride) {
                 <input type="text" id="input-new-dest" value="Av. San Martín y 4to Anillo (Desvío)" style="width:100%; padding:8px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:13px;">
             </div>
             <div class="role-selector-container" style="background:transparent; border:none; padding:0; margin-bottom:12px;">
-                <label>Monto del Ajuste ($)</label>
-                <input type="number" id="input-adjust-amount" value="50" style="width:100%; padding:8px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:13px;">
+                <label>Monto del Ajuste (Bs.)</label>
+                <input type="number" id="input-adjust-amount" value="15" style="width:100%; padding:8px; border-radius:6px; background:#000; border:1px solid var(--panel-border); color:#fff; outline:none; font-size:13px;">
             </div>
             <button class="btn btn-primary btn-sm" id="btn-adjust-fare">Aplicar Desvío & Ajuste</button>
         </div>
         
         <div style="margin-top:20px; display:flex; gap:12px;">
-            <button class="btn btn-outline" id="btn-simulate-ontheway" ${ride.status !== 'assigned' ? 'disabled' : ''}>Marcar: En Camino</button>
-            <button class="btn btn-outline" id="btn-simulate-inprogress" ${ride.status !== 'ontheway' ? 'disabled' : ''}>Iniciar Viaje</button>
-            <button class="btn btn-success" id="btn-simulate-completed" ${ride.status !== 'inprogress' ? 'disabled' : ''}>Completar Viaje</button>
+            ${ride.status === 'assigned' ? `<button class="btn btn-primary" id="btn-simulate-ontheway">Iniciar Entrega</button>` : ''}
+            ${ride.status === 'ontheway' ? `<button class="btn btn-success" id="btn-simulate-completed">Completar Viaje</button>` : ''}
         </div>
     `;
     
@@ -392,42 +421,90 @@ function openMonitoringModal(ride) {
         applyFareAdjustment(ride, newDest, adjustAmount);
     });
     
-    document.getElementById('btn-simulate-ontheway').addEventListener('click', () => {
-        ride.status = 'ontheway';
-        ride.timeline.push({ time: getSimulatedTime(), label: 'Motoquero en Camino', desc: 'Driver en tránsito al punto de partida' });
-        saveStateToStorage();
-        openMonitoringModal(ride);
-        renderAll();
-        showToast('En Camino', 'El motoquero está en camino al punto de origen.', 'warning');
-        
-        if (state.currentStep === 4) {
-            executeDemoStep(5);
-        }
-    });
+    if (ride.status === 'assigned') {
+        document.getElementById('btn-simulate-ontheway').addEventListener('click', () => {
+            ride.status = 'ontheway';
+            ride.timeline.push({ time: getSimulatedTime(), label: 'Motoquero en Camino', desc: 'Paquete/pasajero recogido. En tránsito al destino.' });
+            saveStateToStorage();
+            openMonitoringModal(ride);
+            renderAll();
+            showToast('Entrega Iniciada', 'El conductor está en camino al destino con el paquete.', 'warning');
+            
+            if (state.currentStep === 4) {
+                executeDemoStep(5);
+            }
+        });
+    }
     
-    document.getElementById('btn-simulate-inprogress').addEventListener('click', () => {
-        ride.status = 'inprogress';
-        ride.timeline.push({ time: getSimulatedTime(), label: 'Servicio Iniciado', desc: 'Pasajero a bordo del Motoquero' });
-        saveStateToStorage();
-        openMonitoringModal(ride);
-        renderAll();
-        showToast('Viaje Iniciado', 'El servicio está en curso.', 'warning');
-    });
+    if (ride.status === 'ontheway') {
+        document.getElementById('btn-simulate-completed').addEventListener('click', () => {
+            openCompleteRideModal(ride);
+        });
+    }
+}
+
+function openCompleteRideModal(ride) {
+    document.getElementById('modal-monitoring').classList.remove('active');
     
-    document.getElementById('btn-simulate-completed').addEventListener('click', () => {
-        ride.status = 'completed';
-        ride.timeline.push({ time: getSimulatedTime(), label: 'Servicio Completado', desc: 'Arribo a destino final del cliente' });
-        ride.timeline.push({ time: getSimulatedTime(), label: 'Ticket Digital Generado', desc: 'Ticket emitido en la facturación del cliente' });
-        saveStateToStorage();
+    const modal = document.getElementById('modal-complete-ride');
+    modal.classList.add('active');
+    
+    document.getElementById('complete-ride-fare-label').innerText = `Bs. ${ride.fare}`;
+    document.getElementById('complete-ride-observations').value = '';
+    
+    // Clear and rebind cancel button
+    const cancelBtn = document.getElementById('btn-complete-ride-cancel');
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+    newCancelBtn.addEventListener('click', () => {
         modal.classList.remove('active');
+        openMonitoringModal(ride);
+    });
+    
+    // Rebind header close close button
+    const closeBtn = document.getElementById('btn-modal-complete-close');
+    const newCloseBtn = closeBtn.cloneNode(true);
+    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+    newCloseBtn.addEventListener('click', () => {
+        modal.classList.remove('active');
+        openMonitoringModal(ride);
+    });
+    
+    // Clear and rebind confirm button
+    const confirmBtn = document.getElementById('btn-complete-ride-confirm');
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    newConfirmBtn.addEventListener('click', () => {
+        const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
+        const observations = document.getElementById('complete-ride-observations').value;
+        
+        ride.status = 'completed';
+        ride.paymentMethod = paymentMethod;
+        ride.observations = observations;
+        
+        ride.timeline.push({ time: getSimulatedTime(), label: 'Servicio Completado', desc: `Entregado con éxito. Pago: ${paymentMethod}. Obs: ${observations || 'Ninguna'}` });
+        ride.timeline.push({ time: getSimulatedTime(), label: 'Ticket Digital Generado', desc: 'Ticket emitido en la facturación del cliente' });
+        
+        // Update driver balances in real time for presentation!
+        updateDriverBalance(paymentMethod, ride.fare);
+        
+        modal.classList.remove('active');
+        saveStateToStorage();
         renderAll();
         openTicketModal(ride);
-        showToast('Viaje Completado', 'El ticket digital ya está disponible.', 'success');
+        showToast('Viaje Completado', `Entrega realizada con éxito. Pago por ${paymentMethod}.`, 'success');
         
         if (state.currentStep === 6) {
             switchTab('billing');
         }
     });
+}
+
+function updateDriverBalance(method, amount) {
+    if (!state.balances) {
+        state.balances = { Efectivo: 350, QR: 480, Ticket: 410 };
+    }
+    state.balances[method] = (state.balances[method] || 0) + amount;
 }
 
 function applyFareAdjustment(ride, newDest, amount) {
@@ -438,7 +515,7 @@ function applyFareAdjustment(ride, newDest, amount) {
         amount: amount,
         reason: 'El cliente solicitó parada adicional en Av. San Martín.'
     });
-    ride.timeline.push({ time: getSimulatedTime(), label: 'Ruta Modificada', desc: `Desvío a: ${newDest}. Incremento de $${amount} aplicado.` });
+    ride.timeline.push({ time: getSimulatedTime(), label: 'Ruta Modificada', desc: `Desvío a: ${newDest}. Incremento de Bs. ${amount} aplicado. (Demora: +5 min)` });
     
     document.getElementById('modal-monitoring').classList.remove('active');
     saveStateToStorage();
@@ -464,7 +541,7 @@ function openTicketModal(ride) {
     
     let adjustmentRows = '';
     ride.adjustments.forEach(adj => {
-        adjustmentRows += `<div class="ticket-row-print"><span>+ ${adj.type}</span><span>$ ${adj.amount}</span></div>`;
+        adjustmentRows += `<div class="ticket-row-print"><span>+ ${adj.type}</span><span>Bs. ${adj.amount}</span></div>`;
     });
     
     let timelineHTML = '';
@@ -500,9 +577,9 @@ function openTicketModal(ride) {
             </div>
             
             <hr style="border:none; border-top:1px dashed #111827; margin:10px 0;">
-            <div class="ticket-row-print"><span>Tarifa Base</span><span>$ ${ride.initialFare}</span></div>
+            <div class="ticket-row-print"><span>Tarifa Base</span><span>Bs. ${ride.initialFare}</span></div>
             ${adjustmentRows}
-            <div class="ticket-row-print total"><span>TARIFA FINAL</span><span>$ ${ride.fare}</span></div>
+            <div class="ticket-row-print total"><span>TARIFA FINAL</span><span>Bs. ${ride.fare}</span></div>
         </div>
         <div style="display:flex; justify-content:space-between;">
             <button class="btn btn-outline" onclick="window.print()"><i class="fa-solid fa-print"></i> Imprimir</button>
@@ -534,9 +611,9 @@ function renderBilling() {
             <td>${ride.requester}</td>
             <td>${ride.driver?.name || '<em>No asignado</em>'}</td>
             <td><small>${ride.pickup} ➔ ${ride.destination}</small></td>
-            <td><strong>$ ${ride.fare}</strong></td>
+            <td><strong>Bs. ${ride.fare}</strong></td>
             <td>${today}</td>
-            <td><span class="badge ${ride.status === 'completed' ? 'badge-success' : 'badge-pending'}">${ride.status}</span></td>
+            <td><span class="badge ${ride.status === 'completed' ? 'badge-success' : 'badge-pending'}">${statusLabels[ride.status] || ride.status}</span></td>
             <td>
                 <button class="btn btn-outline btn-sm" id="btn-view-ticket-bill-${ride.id}"><i class="fa-regular fa-eye"></i> Ver</button>
             </td>
@@ -563,7 +640,7 @@ function renderReports() {
             row.className = 'stat-row';
             row.innerHTML = `
                 <span>${ride.company} (${ride.id}) - ${adj.type}</span>
-                <strong class="text-orange">+$ ${adj.amount}</strong>
+                <strong class="text-orange">+Bs. ${adj.amount}</strong>
             `;
             list.appendChild(row);
         });
@@ -725,7 +802,7 @@ function initHelpCenter() {
 function updateKPIs() {
     const pendingCount = state.rides.filter(r => r.status === 'pending').length;
     const completedCount = state.rides.filter(r => r.status === 'completed').length;
-    const activeCount = state.rides.filter(r => ['assigned', 'ontheway', 'inprogress'].includes(r.status)).length;
+    const activeCount = state.rides.filter(r => ['assigned', 'ontheway'].includes(r.status)).length;
     
     animateKPIChange('kpi-pending-rides', pendingCount);
     animateKPIChange('kpi-completed-rides', 38 + completedCount - 1);
@@ -734,9 +811,9 @@ function updateKPIs() {
     document.getElementById('kpi-today-rides').innerText = 42 + state.rides.length - 1;
     
     // Estimate billing
-    const baseBilling = 12450;
+    const baseBilling = 1240;
     const additional = state.rides.reduce((acc, r) => acc + (r.status === 'completed' ? r.fare : 0), 0);
-    animateKPIChange('kpi-billing', `$ ${baseBilling + additional}`);
+    animateKPIChange('kpi-billing', `Bs. ${baseBilling + additional}`);
 }
 
 function animateKPIChange(elId, newVal) {
@@ -755,6 +832,20 @@ function renderAll() {
     renderActivityFeed();
     renderNotificationsDropdown();
     updateKPIs();
+    updateBalances();
+}
+
+function updateBalances() {
+    if (!state.balances) {
+        state.balances = { Efectivo: 350, QR: 480, Ticket: 410 };
+    }
+    const cashEl = document.getElementById('balance-cash');
+    const qrEl = document.getElementById('balance-qr');
+    const ticketEl = document.getElementById('balance-ticket');
+    
+    if (cashEl) cashEl.innerText = `Bs. ${state.balances.Efectivo}`;
+    if (qrEl) qrEl.innerText = `Bs. ${state.balances.QR}`;
+    if (ticketEl) ticketEl.innerText = `Bs. ${state.balances.Ticket}`;
 }
 
 // Guided Demo Steps
@@ -827,9 +918,9 @@ function executeDemoStep(stepNum) {
         1: 'Paso 1: Una empresa solicita un servicio de cadetería express.',
         2: 'Paso 2: El pedido se recibe en Operaciones. Temporizador alerta.',
         3: 'Paso 3: El operador selecciona un conductor para asignarlo.',
-        4: 'Paso 4: El Motoquero acepta y se pone en camino (Simulación de Driver).',
-        5: 'Paso 5: El cliente solicita desvío. Se reajusta tarifa del viaje.',
-        6: 'Paso 6: Conductor finaliza viaje. Se genera Ticket y cierra historia.'
+        4: 'Paso 4: El Motoquero acepta y se dirige al punto de origen (Estado Asignado).',
+        5: 'Paso 5: Conductor recoge el paquete/pasajero e inicia entrega (Estado En Camino).',
+        6: 'Paso 6: Conductor finaliza el viaje, registra método de pago y genera Ticket.'
     };
     
     document.getElementById('step-hint-text').innerText = hints[stepNum];
@@ -852,21 +943,24 @@ function executeDemoStep(stepNum) {
         switchTab('operations');
         openAssignModal();
     } else if (stepNum === 4) {
-        // Simular Motoquero en camino
+        // Simular Motoquero Asignado
         const r = state.rides[0];
         if (r) {
             if (!r.driver) r.driver = state.drivers[0];
-            r.status = 'ontheway';
-            r.timeline.push({ time: getSimulatedTime(), label: 'Motoquero en Camino', desc: 'Carlos Méndez aceptó el servicio.' });
+            r.status = 'assigned';
+            r.timeline.push({ time: getSimulatedTime(), label: 'Conductor Asignado', desc: 'Carlos Méndez aceptó y se dirige al punto de origen.' });
         }
         saveStateToStorage();
         switchTab('operations');
         renderAll();
-        showToast('Servicio Aceptado', 'Carlos Méndez está en camino.', 'success');
+        showToast('Servicio Asignado', 'Carlos Méndez se dirige al punto de recogida.', 'success');
     } else if (stepNum === 5) {
         const r = state.rides[0];
         if (r) {
-            r.status = 'inprogress';
+            r.status = 'ontheway';
+            if (r.timeline.length < 3) {
+                r.timeline.push({ time: getSimulatedTime(), label: 'Motoquero en Camino', desc: 'Paquete recogido. En tránsito al destino. (Demora recogida: +3 min)' });
+            }
         }
         saveStateToStorage();
         switchTab('operations');
@@ -876,14 +970,10 @@ function executeDemoStep(stepNum) {
         const r = state.rides[0];
         if (r) {
             r.status = 'completed';
-            r.destination = 'Equipetrol Calle 8 Norte (Desvío)';
-            r.fare = 200;
-            if (r.adjustments.length === 0) {
-                r.adjustments.push({ type: 'Desvío de Ruta', amount: 50, reason: 'Cambio de destino en Av. San Martín.' });
-            }
+            r.paymentMethod = 'Efectivo';
+            r.fare = 35;
             if (r.timeline.length < 4) {
-                r.timeline.push({ time: getSimulatedTime(), label: 'Ruta Modificada', desc: 'Desvío y tarifa reajustada.' });
-                r.timeline.push({ time: getSimulatedTime(), label: 'Servicio Completado', desc: 'Llegada exitosa a destino.' });
+                r.timeline.push({ time: getSimulatedTime(), label: 'Servicio Completado', desc: 'Entregado con éxito. Pago: Efectivo. Obs: Ninguna. (Demora: +12 min)' });
             }
         }
         saveStateToStorage();
@@ -897,9 +987,9 @@ function executeDemoStep(stepNum) {
 function simulatePeakHourScenario() {
     const companies = ['Banco Ganadero', 'Hospital Foianini', 'Laboratorio Chávez', 'Universidad Privada'];
     const routes = [
-        { pickup: 'Av. Irala 412', destination: 'Equipetrol Calle 9', fare: 120 },
-        { pickup: 'Hospital Foianini', destination: 'Km 5 Doble Vía La Guardia', fare: 180 },
-        { pickup: 'Laboratorio Chávez Central', destination: 'Pampa de la Isla', fare: 250 }
+        { pickup: 'Av. Irala 412', destination: 'Equipetrol Calle 9', fare: 25 },
+        { pickup: 'Hospital Foianini', destination: 'Km 5 Doble Vía La Guardia', fare: 35 },
+        { pickup: 'Laboratorio Chávez Central', destination: 'Pampa de la Isla', fare: 45 }
     ];
     
     routes.forEach((route, index) => {
@@ -938,8 +1028,8 @@ function simulateEmergencyScenario() {
         requester: 'Dr. Fernando Rojas (Urgencias)',
         pickup: 'Hospital Foianini Quirófano A',
         destination: 'Banco de Sangre SCZ (Urgente)',
-        initialFare: 220,
-        fare: 220,
+        initialFare: 55,
+        fare: 55,
         waitTime: 0,
         elapsedTime: 0.1,
         status: 'pending',
@@ -965,8 +1055,8 @@ document.getElementById('btn-request-ride-manual').addEventListener('click', () 
         requester: 'Lic. Andrés Mercado',
         pickup: '4to Anillo Av. Bush',
         destination: 'Parque Industrial PI-22',
-        initialFare: 180,
-        fare: 180,
+        initialFare: 30,
+        fare: 30,
         waitTime: 0,
         elapsedTime: 0.1,
         status: 'pending',

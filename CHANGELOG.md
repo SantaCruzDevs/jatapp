@@ -26,6 +26,16 @@ All notable changes to this project will be documented in this file.
 - Preparación del entorno de infraestructura y despliegue del prototipo a Vercel con el archivo **[vercel.json](file:///D:/Antigravity%20Projects/workspace/JATapp/vercel.json)** y la creación del manual operativo **[RB-001](file:///D:/Antigravity%20Projects/workspace/JATapp/docs/RUNBOOKS/RB-001_DEPLOYMENT_VERCEL.md)** para la delegación de DNS a Cloudflare bajo el subdominio `jatappdemo.santacruzdevs.com` (JAT-INFRA-001).
 - Diseño y desarrollo del prototipo de experiencia de colaboración multiventana en tiempo real **(JAT-DEMO-002)** sincronizando estados vía Storage API y habilitando flujos simulados de conductores.
 - Diseño de la experiencia de confianza del producto **(JAT-DEMO-003)** incorporando la cabecera ejecutiva con estado de sincronización en vivo, notificaciones persistentes, panel de salud del sistema, casos de hora pico y emergencias, y ayuda interactiva explicativa.
+- Creación de la Licencia MIT, reestructuración y publicación del primer **Release Candidate 1 (JAT-RELEASE-001)** para validación y despliegue final en Vercel.
+- Creación e integración del Runbook de Seguridad para Repositorios Públicos **[RB-002](file:///D:/Antigravity%20Projects/workspace/JATapp/docs/RUNBOOKS/RB-002_PUBLIC_REPOSITORY_SECURITY_CHECKLIST.md)** para la auditoría de strings de conexión y secretos.
+- Auditoría técnica y funcional completa del prototipo **(JAT-0001)** y creación de los entregables de evaluación de arquitectura, base de datos Postgres, calidad del código, rendimiento, UX y el roadmap/backlog de migración a JATapp Demo v2 en la carpeta **[docs/AUDITS/](file:///D:/Antigravity%20Projects/workspace/JATapp/docs/AUDITS/)**.
+- Diseño y publicación de la Hoja de Ruta Comercial **(JAT-DEMO-0001)** en **[docs/DEMO/COMMERCIAL_DEMO_ROADMAP.md](file:///D:/Antigravity%20Projects/workspace/JATapp/docs/DEMO/COMMERCIAL_DEMO_ROADMAP.md)** clasificando prioridades operativas, definiendo el guión del caso de negocio de 10 minutos y analizando riesgos comerciales.
+- Ajustes de localización para Bolivia: cambio de divisa de `$` a `Bs.` y ajuste de los rangos de precios para tarifas entre `20 Bs` y `60 Bs` según distancia (tanto en el estado por defecto como en escenarios simulados de hora pico y emergencias).
+- Traducción al español de las etiquetas de estado en la UI (ej. `ASSIGNED` a `Asignado`).
+- Integración funcional del botón "Iniciar Viaje" en el flujo del Kanban de operaciones, registrando el hito correspondiente con tiempos de retraso simulados en la línea de tiempo.
+
+
+
 
 
 

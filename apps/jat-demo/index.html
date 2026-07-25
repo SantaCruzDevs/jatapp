@@ -205,9 +205,9 @@
                             </div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-icon kpi-purple"><i class="fa-solid fa-dollar-sign"></i></div>
+                            <div class="kpi-icon kpi-purple"><i class="fa-solid fa-coins"></i></div>
                             <div class="kpi-data">
-                                <div class="kpi-value kpi-animate" id="kpi-billing">$ 12,450</div>
+                                <div class="kpi-value kpi-animate" id="kpi-billing">Bs. 1.240</div>
                                 <div class="kpi-label">Facturación Estimada</div>
                             </div>
                         </div>
@@ -287,14 +287,6 @@
                         <!-- Column 4: IN PROGRESS -->
                         <div class="kanban-column" id="col-inprogress">
                             <div class="column-header">
-                                <h3>EN CURSO</h3>
-                                <span class="column-count" id="count-inprogress">0</span>
-                            </div>
-                            <div class="kanban-cards-container" id="container-inprogress">
-                                <!-- Cards injected via JS -->
-                            </div>
-                        </div>
-
                         <!-- Column 5: COMPLETED -->
                         <div class="kanban-column" id="col-completed">
                             <div class="column-header">
@@ -308,35 +300,27 @@
                     </div>
                 </section>
 
-                <!-- MODULE 9: BILLING -->
+                <!-- MODULE 9: DIGITAL BILLING -->
                 <section id="module-billing" class="module-tab">
                     <div class="billing-container">
                         <div class="billing-controls">
-                            <div class="search-bar">
-                                <i class="fa-solid fa-magnifying-glass"></i>
-                                <input type="text" id="billing-search" placeholder="Filtrar por Empresa, Ticket o Solicitante...">
+                            <h2>Facturación Corporativa Agrupada</h2>
+                            <div style="display:flex; gap:10px;">
+                                <button class="btn btn-outline btn-sm"><i class="fa-solid fa-file-export"></i> Exportar CSV</button>
+                                <button class="btn btn-primary btn-sm" id="btn-group-invoice"><i class="fa-solid fa-receipt"></i> Facturar Selección</button>
                             </div>
-                            <div class="filter-group">
-                                <button class="btn btn-outline active" id="btn-billing-all">Todos</button>
-                                <button class="btn btn-outline" id="btn-billing-bolico">Farmacorp</button>
-                                <button class="btn btn-outline" id="btn-billing-sczlog">Banco Ganadero</button>
-                            </div>
-                            <button class="btn btn-success" id="btn-generate-invoice-bulk">
-                                <i class="fa-solid fa-file-invoice"></i> Generar Factura Agrupada
-                            </button>
                         </div>
-
-                        <div class="table-container">
-                            <table class="data-table" id="tickets-table">
+                        <div class="billing-table-wrapper">
+                            <table class="billing-table">
                                 <thead>
                                     <tr>
                                         <th><input type="checkbox" id="select-all-tickets"></th>
-                                        <th>Nro Ticket</th>
-                                        <th>Empresa</th>
-                                        <th>Solicitante</th>
+                                        <th>ID Ticket</th>
+                                        <th>Cliente</th>
+                                        <th>Pasajero</th>
                                         <th>Motoquero</th>
-                                        <th>Origen ➔ Destino</th>
-                                        <th>Tarifa Final</th>
+                                        <th>Ruta</th>
+                                        <th>Tarifa</th>
                                         <th>Fecha</th>
                                         <th>Estado</th>
                                         <th>Acciones</th>
@@ -420,43 +404,44 @@
                                 <span>Trazabilidad de Tarifas</span>
                             </div>
                         </div>
-
-                        <div class="models-grid">
-                            <div class="model-card">
-                                <i class="fa-solid fa-cloud model-icon text-blue"></i>
-                                <h3>Cloud SaaS</h3>
-                                <ul>
-                                    <li>Suscripción mensual simple</li>
-                                    <li>Actualizaciones continuas</li>
-                                    <li>Soporte de plataforma incluido</li>
-                                    <li>Mantenimiento Cloud gestionado</li>
-                                </ul>
+                        
+                        <div class="closing-projections">
+                            <h3>Balance de Canales de Cobro (Demo Motoquero)</h3>
+                            <div class="kpi-grid" style="margin-top:15px; margin-bottom:25px;">
+                                <div class="kpi-card">
+                                    <div class="kpi-icon kpi-green"><i class="fa-solid fa-money-bill-wave"></i></div>
+                                    <div class="kpi-data">
+                                        <div class="kpi-value text-green" id="balance-cash">Bs. 350</div>
+                                        <div class="kpi-label">Cobros Efectivo</div>
+                                    </div>
+                                </div>
+                                <div class="kpi-card">
+                                    <div class="kpi-icon kpi-blue"><i class="fa-solid fa-qrcode"></i></div>
+                                    <div class="kpi-data">
+                                        <div class="kpi-value text-blue" id="balance-qr">Bs. 480</div>
+                                        <div class="kpi-label">Cobros QR Digital</div>
+                                    </div>
+                                </div>
+                                <div class="kpi-card">
+                                    <div class="kpi-icon kpi-orange"><i class="fa-solid fa-ticket"></i></div>
+                                    <div class="kpi-data">
+                                        <div class="kpi-value text-orange" id="balance-ticket">Bs. 410</div>
+                                        <div class="kpi-label">Cobros Ticket Corporativo</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="model-card">
-                                <i class="fa-solid fa-key model-icon text-green"></i>
-                                <h3>Licencia Perpetua</h3>
-                                <ul>
-                                    <li>Derechos de uso permanentes</li>
-                                    <li>Alojado en infraestructura cliente</li>
-                                    <li>Soporte opcional anualizado</li>
-                                    <li>Código propietario</li>
-                                </ul>
-                            </div>
-                            <div class="model-card">
-                                <i class="fa-solid fa-code model-icon text-orange"></i>
-                                <h3>Desarrollo a Medida</h3>
-                                <ul>
-                                    <li>Implementación y reglas exclusivas</li>
-                                    <li>Entrega del código fuente por contrato</li>
-                                    <li>Evolución a medida de MotoJAT</li>
-                                    <li>Soporte dedicado 24/7</li>
-                                </ul>
-                            </div>
+                            
+                            <h3>Próximos Pasos Técnicos Sugeridos</h3>
+                            <ul class="closing-list" style="margin-top: 15px;">
+                                <li><i class="fa-solid fa-circle-check text-green"></i> Consolidación del monorepositorio en Next.js.</li>
+                                <li><i class="fa-solid fa-circle-check text-green"></i> Conexión con Supabase Realtime Channels.</li>
+                                <li><i class="fa-solid fa-circle-check text-green"></i> Encriptación y almacenamiento JWT.</li>
+                            </ul>
                         </div>
                     </div>
                 </section>
 
-                <!-- MODULE 11: ADMINISTRATION -->
+                <!-- MODULE 12: SETTINGS & CONFIGURATION -->
                 <section id="module-admin-settings" class="module-tab">
                     <div class="admin-grid">
                         <div class="admin-panel">
@@ -482,15 +467,15 @@
                             <div class="tariff-table">
                                 <div class="tariff-row">
                                     <span>Tarifa Base (hasta 3 km)</span>
-                                    <strong>$ 150</strong>
+                                    <strong>Bs. 25</strong>
                                 </div>
                                 <div class="tariff-row">
                                     <span>Km adicional</span>
-                                    <strong>$ 25</strong>
+                                    <strong>Bs. 5</strong>
                                 </div>
                                 <div class="tariff-row">
                                     <span>Minuto de espera (tolerancia 5 min)</span>
-                                    <strong>$ 10</strong>
+                                    <strong>Bs. 2</strong>
                                 </div>
                             </div>
                         </div>
@@ -523,7 +508,7 @@
         </div>
     </div>
 
-    <!-- MODAL: MONITORING / MONITOR DE VIAJE -->
+    <!-- MODAL: RIDE MONITORING (OPERATIONS CONTROL) -->
     <div class="modal-overlay" id="modal-monitoring">
         <div class="modal-card">
             <div class="modal-header">
@@ -531,12 +516,12 @@
                 <button class="modal-close" id="btn-modal-monitor-close">&times;</button>
             </div>
             <div class="modal-body" id="monitoring-details-body">
-                <!-- Details injected via JS -->
+                <!-- Injected via JS -->
             </div>
         </div>
     </div>
 
-    <!-- MODAL: INVOICE / DIGITAL TICKET -->
+    <!-- MODAL: DIGITAL TICKET -->
     <div class="modal-overlay" id="modal-ticket">
         <div class="modal-card modal-ticket-card">
             <div class="modal-header">
@@ -545,6 +530,47 @@
             </div>
             <div class="modal-body" id="ticket-body">
                 <!-- Ticket structure injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: COMPLETE RIDE (WITH PAYMENT AND OBSERVATIONS) -->
+    <div class="modal-overlay" id="modal-complete-ride">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Completar Servicio</h2>
+                <button class="modal-close" id="btn-modal-complete-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">Registre los detalles de cobro y finalización del servicio express.</p>
+                <div class="stats-list" style="margin-bottom:16px;">
+                    <div class="stat-row">
+                        <span>Tarifa del Servicio</span>
+                        <strong id="complete-ride-fare-label" style="font-size:18px; color:#fff;">Bs. 0</strong>
+                    </div>
+                </div>
+                <div class="role-selector-container" style="background:transparent; border:none; padding:0; margin-bottom:16px;">
+                    <label style="font-weight:700; margin-bottom:8px; display:block;">Forma de Pago</label>
+                    <div style="display:flex; gap:16px; margin-top:8px;">
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color:#fff;">
+                            <input type="radio" name="payment-method" value="Efectivo" checked style="accent-color:var(--accent-blue);"> Efectivo
+                        </label>
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color:#fff;">
+                            <input type="radio" name="payment-method" value="QR" style="accent-color:var(--accent-blue);"> QR
+                        </label>
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color:#fff;">
+                            <input type="radio" name="payment-method" value="Ticket" style="accent-color:var(--accent-blue);"> Ticket
+                        </label>
+                    </div>
+                </div>
+                <div class="role-selector-container" style="background:transparent; border:none; padding:0; margin-bottom:20px;">
+                    <label style="font-weight:700; margin-bottom:8px; display:block;">Observaciones (Opcional)</label>
+                    <textarea id="complete-ride-observations" placeholder="Escriba comentarios sobre la entrega o desvíos si los hubo..." style="width:100%; height:70px; padding:10px; border-radius:8px; background:#000; border:1px solid var(--panel-border); color:#fff; font-size:13px; outline:none; resize:none;"></textarea>
+                </div>
+                <div style="display:flex; gap:12px; justify-content:flex-end;">
+                    <button class="btn btn-outline" id="btn-complete-ride-cancel">Cancelar</button>
+                    <button class="btn btn-success" id="btn-complete-ride-confirm">Completar Viaje</button>
+                </div>
             </div>
         </div>
     </div>

@@ -757,7 +757,7 @@ h1, h2, h3, .logo {
 /* MODULE 3: KANBAN */
 .kanban-board {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
     flex-grow: 1;
     overflow-x: auto;

@@ -2,16 +2,16 @@
 Document ID: KODE-IDX-001
 Document Title: KODE Central Metadata Index
 Document Type: Directory Index
-Version: 1.4
+Version: 1.7
 Status: Published
 Owner: Jesús Daniel Murichi Barrientos
 Steward: Santa Cruz Devs
 Governed By: PB-000 (Constitution)
-Depends On: CONSTITUTION.md, KAC.md, KGG.md, KMR.md, STM-0002_METADATA_HEADER.md, standards/SACS-001.md, standards/PES-001.md, standards/RST-001.md, RUNBOOKS/RB-001_DEPLOYMENT_VERCEL.md
+Depends On: CONSTITUTION.md, KAC.md, KGG.md, KMR.md, STM-0002_METADATA_HEADER.md, standards/SACS-001.md, standards/PES-001.md, standards/RST-001.md, RUNBOOKS/RB-001_DEPLOYMENT_VERCEL.md, RUNBOOKS/RB-002_PUBLIC_REPOSITORY_SECURITY_CHECKLIST.md, AUDITS/AUDIT_JATAPP_DEMO_V2.md, DEMO/COMMERCIAL_DEMO_ROADMAP.md
 Related Assets: None
 Classification: Internal
 Created: 2026-07-23
-Last Updated: 2026-07-23
+Last Updated: 2026-07-24
 Review Cycle: Every Sprint
 ---
 
@@ -29,16 +29,22 @@ Este índice recopila y consolida las cabeceras de metadatos estandarizadas (STM
 | **KAC-001** | [Knowledge Asset Catalog](KAC.md) | Knowledge Asset Catalog | 1.0 | Draft | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md |
 | **KGG-001** | [Knowledge Governance Guide](KGG.md) | Governance Guide | 1.0 | Draft | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md, KAC.md |
 | **KMR-001** | [KODE Methodology Register](KMR.md) | Methodology Register | 1.0 | Draft | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md |
-| **KODE-DIR-000** | [README (Constitution Directory)](README.md) | Directory Index | 1.9 | Approved | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md, KAC.md, KGG.md, KMR.md, KODE_METADATA_INDEX.md, SACS-001.md, PES-001.md, RST-001.md, RUNBOOKS/RB-001_DEPLOYMENT_VERCEL.md |
-| **KODE-IDX-001** | [KODE Central Metadata Index](KODE_METADATA_INDEX.md) | Directory Index | 1.4 | Published | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md, STM-0002_METADATA_HEADER.md, standards/SACS-001.md, standards/PES-001.md, standards/RST-001.md, RUNBOOKS/RB-001_DEPLOYMENT_VERCEL.md |
+| **KODE-DIR-000** | [README (Constitution Directory)](README.md) | Directory Index | 2.2 | Approved | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md, KAC.md, KGG.md, KMR.md, KODE_METADATA_INDEX.md, SACS-001.md, PES-001.md, RST-001.md, RUNBOOKS/RB-001_DEPLOYMENT_VERCEL.md, RUNBOOKS/RB-002_PUBLIC_REPOSITORY_SECURITY_CHECKLIST.md, AUDITS/AUDIT_JATAPP_DEMO_V2.md, DEMO/COMMERCIAL_DEMO_ROADMAP.md |
+| **KODE-IDX-001** | [KODE Central Metadata Index](KODE_METADATA_INDEX.md) | Directory Index | 1.7 | Published | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md, STM-0002_METADATA_HEADER.md, standards/SACS-001.md, standards/PES-001.md, standards/RST-001.md, RUNBOOKS/RB-001_DEPLOYMENT_VERCEL.md, RUNBOOKS/RB-002_PUBLIC_REPOSITORY_SECURITY_CHECKLIST.md, AUDITS/AUDIT_JATAPP_DEMO_V2.md, DEMO/COMMERCIAL_DEMO_ROADMAP.md |
 | **SACS-001** | [Specialized Agent Collaboration Standard](standards/SACS-001.md) | Standard (STD) | 1.0 | Approved | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md, KAC.md, KGG.md |
 | **PES-001** | [Prompt Engineering Standard](standards/PES-001.md) | Standard (STD) | 1.0 | Approved | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md, KAC.md, KGG.md, STM-0002_METADATA_HEADER.md, standards/SACS-001.md |
 | **RST-001** | [Repository Standard](standards/RST-001.md) | Standard (STD) | 1.0 | Approved | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md, KAC.md, KGG.md, STM-0002_METADATA_HEADER.md, standards/SACS-001.md, standards/PES-001.md |
 | **RB-001** | [Commercial Demo Deployment Runbook](RUNBOOKS/RB-001_DEPLOYMENT_VERCEL.md) | Runbook (RB) | 1.0 | Approved | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md, KAC.md, KGG.md, standards/RST-001.md |
+| **RB-002** | [Public Repository Security Checklist](RUNBOOKS/RB-002_PUBLIC_REPOSITORY_SECURITY_CHECKLIST.md) | Runbook (RB) | 1.0 | Approved | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md, KAC.md, KGG.md, standards/RST-001.md, RUNBOOKS/RB-001_DEPLOYMENT_VERCEL.md |
+| **AUD-ROOT-001**| [Reporte de Auditoría Técnica & Funcional](AUDITS/AUDIT_JATAPP_DEMO_V2.md) | Audit Index (AUD) | 1.0 | Approved | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md, KAC.md, KGG.md, RUNBOOKS/RB-002_PUBLIC_REPOSITORY_SECURITY_CHECKLIST.md |
+| **DEM-MAP-001**| [Commercial Demo Roadmap](DEMO/COMMERCIAL_DEMO_ROADMAP.md) | Roadmap (MAP) | 1.0 | Approved | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md, KAC.md, KGG.md, AUDITS/AUDIT_JATAPP_DEMO_V2.md |
 | **STM-0002** | [Standard Metadata Header](statements/STM-0002_METADATA_HEADER.md) | Statement (STM) | 1.0 | Approved | J. Murichi | Santa Cruz Devs | PB-000 | None |
 | **PB-DIR-000** | [README (Project Bible Directory)](../PROJECT_BIBLE/README.md) | Directory Index | 1.0 | Draft | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md |
 | **PB-008** | [AI Collaboration (KODE framework)](../PROJECT_BIBLE/08_AI_COLLABORATION.md) | Standard (STD) | 0.2 | Draft | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md, KAC.md, KGG.md |
 | **PB-REV-000** | [Reviews Register](../PROJECT_BIBLE/REVIEWS.md) | Register (REG) | 1.0 | Draft | J. Murichi | Santa Cruz Devs | PB-000 | CONSTITUTION.md |
+
+
+
 
 
 
