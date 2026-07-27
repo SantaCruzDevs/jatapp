@@ -76,12 +76,6 @@ window.addEventListener('DOMContentLoaded', () => {
     
     loadStateFromStorage();
     
-    if (urlSyncId) {
-        state.syncObjectId = urlSyncId;
-        saveStateToStorage();
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    
     initNavigation();
     initRoleSelector();
     initDemoController();
@@ -91,6 +85,11 @@ window.addEventListener('DOMContentLoaded', () => {
     initDriverWalletFilters();
     initDragAndDrop();
     initCloudSync();
+    
+    if (urlSyncId) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        joinSyncSession(urlSyncId);
+    }
     
     // Initial clock update
     updateClock();
@@ -1957,5 +1956,39 @@ async function pullStateFromSyncAPI() {
         }
     } catch (e) {
         console.error("Cloud pull failed:", e);
+    }
+}
+
+async function joinSyncSession(syncId) {
+    try {
+        const res = await fetch(`https://api.restful-api.dev/objects/${syncId}`);
+        if (res.ok) {
+            const result = await res.json();
+            if (result && result.data && result.data.state) {
+                const prevRole = activeRole;
+                
+                state = result.data.state;
+                state.syncObjectId = syncId;
+                lastSyncTimestamp = result.data.updatedAt || Date.now();
+                
+                // Guardar localmente
+                try {
+                    localStorage.setItem('jatapp_demo_state', JSON.stringify(state));
+                } catch(e){}
+                
+                // Iniciar ciclo de sincronización e interfaz
+                startSyncInterval();
+                renderAll();
+                
+                // Conservar rol local
+                if (activeRole !== prevRole) {
+                    selectPresentationRole(prevRole);
+                }
+                
+                showToast('Sincronización Conectada', 'Vínculo con la central en la nube establecido.', 'success');
+            }
+        }
+    } catch (e) {
+        console.error("Failed to join sync session:", e);
     }
 }

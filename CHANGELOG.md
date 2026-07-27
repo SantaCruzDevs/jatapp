@@ -84,6 +84,8 @@ All notable changes to this project will be documented in this file.
     - Se añadió el botón **Sincronizar Celular** en la barra superior. Al activarse, genera una sesión remota única y despliega un modal con un código QR interactivo generado mediante una API de QR pública.
     - Captura automática por URL: Al escanear el QR con la cámara del celular, el teléfono abre el sitio web con el parámetro `?syncId=...`, se conecta a la sesión de forma inmediata sin necesidad de ingresar códigos manualmente y comienza a escuchar cambios.
     - Sincronización bidireccional reactiva: Se configuró un bucle inteligente de sondeo (polling cada 3.5 segundos) que descarga las modificaciones de la central en la nube y sincroniza el layout. De forma paralela, cualquier acción realizada (creación de carrera, asignación, tránsitos, cobros) empuja el nuevo estado inmediatamente a la nube, manteniendo las pantallas de la PC y los celulares en vivo.
+    - Hotfix de colisión de estados (Overwriting Race Condition): Se introdujo la función `joinSyncSession` para que el dispositivo secundario (celular) descargue primero los datos existentes en la nube antes de activar la sincronización, evitando que el teléfono sobreescriba la nube con sus datos por defecto locales al inicializarse.
+
 
 
 
