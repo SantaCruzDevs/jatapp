@@ -70,7 +70,18 @@ let activeRole = 'admin';
 let activeTab = 'dashboard';
 
 window.addEventListener('DOMContentLoaded', () => {
+    // Captura de ID de sincronización desde URL (si se escaneó el QR)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlSyncId = urlParams.get('syncId');
+    
     loadStateFromStorage();
+    
+    if (urlSyncId) {
+        state.syncObjectId = urlSyncId;
+        saveStateToStorage();
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
     initNavigation();
     initRoleSelector();
     initDemoController();
@@ -79,6 +90,7 @@ window.addEventListener('DOMContentLoaded', () => {
     initReportsNavigation();
     initDriverWalletFilters();
     initDragAndDrop();
+    initCloudSync();
     
     // Initial clock update
     updateClock();
@@ -125,6 +137,11 @@ function saveStateToStorage() {
         localStorage.setItem('jatapp_demo_state', JSON.stringify(state));
     } catch (e) {
         console.warn("Storage item save failed.", e);
+    }
+    
+    // Si la sincronización en la nube está activa, enviar la actualización
+    if (state && state.syncObjectId) {
+        pushStateToSyncAPI();
     }
 }
 
@@ -1717,5 +1734,228 @@ function handleRideStatusTransition(ride, targetStatus) {
             return;
         }
         openCompleteRideModal(ride);
+    }
+}
+
+// ==========================================================================
+// CLOUD SYNC MODULE (Multi-Device Cloud Synchronization for Live Demo)
+// ==========================================================================
+let syncInterval = null;
+let lastSyncTimestamp = 0;
+let isPushingSync = false;
+
+function initCloudSync() {
+    const btnTrigger = document.getElementById('btn-trigger-cloud-sync');
+    const modal = document.getElementById('modal-cloud-sync');
+    const btnClose = document.getElementById('btn-modal-sync-close');
+    const btnCopy = document.getElementById('btn-copy-sync-url');
+    const btnDisconnect = document.getElementById('btn-sync-disconnect');
+    
+    if (btnTrigger) {
+        btnTrigger.addEventListener('click', () => {
+            if (modal) modal.style.display = 'flex';
+            renderSyncStatusInModal();
+        });
+    }
+    if (btnClose && modal) {
+        btnClose.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
+    if (btnCopy) {
+        btnCopy.addEventListener('click', () => {
+            const input = document.getElementById('input-sync-url');
+            if (input && input.value) {
+                input.select();
+                document.execCommand('copy');
+                showToast('Enlace Copiado', 'Copia el enlace en el navegador de tu celular.', 'success');
+            }
+        });
+    }
+    if (btnDisconnect) {
+        btnDisconnect.addEventListener('click', () => {
+            if (confirm('¿Desea desconectar la sincronización de dispositivos en la nube?')) {
+                disconnectSyncSession();
+            }
+        });
+    }
+
+    // Auto-connect if syncObjectId is already present in state
+    if (state && state.syncObjectId) {
+        startSyncInterval();
+    }
+}
+
+function startSyncInterval() {
+    if (syncInterval) clearInterval(syncInterval);
+    
+    // Update Header Button UI
+    updateHeaderSyncButton(true);
+    
+    // Start Polling Loop (each 3.5s to avoid hitting free-tier api rate limits)
+    syncInterval = setInterval(pullStateFromSyncAPI, 3500);
+}
+
+function updateHeaderSyncButton(connected) {
+    const btn = document.getElementById('btn-trigger-cloud-sync');
+    const icon = document.getElementById('cloud-sync-icon');
+    const label = document.getElementById('cloud-sync-label');
+    
+    if (btn && icon && label) {
+        if (connected) {
+            btn.style.borderColor = '#10b981';
+            btn.style.color = '#10b981';
+            btn.style.background = 'rgba(16, 185, 129, 0.1)';
+            icon.className = 'fa-solid fa-cloud-arrow-up blink';
+            label.innerText = 'Sincronizado';
+        } else {
+            btn.style.borderColor = 'var(--panel-border)';
+            btn.style.color = 'var(--text-muted)';
+            btn.style.background = 'transparent';
+            icon.className = 'fa-solid fa-cloud';
+            label.innerText = 'Sincronizar Celular';
+        }
+    }
+}
+
+async function renderSyncStatusInModal() {
+    const qrImage = document.getElementById('sync-qr-image');
+    const qrSpinner = document.getElementById('sync-qr-spinner');
+    const urlInput = document.getElementById('input-sync-url');
+    const btnDisconnect = document.getElementById('btn-sync-disconnect');
+    
+    if (!state.syncObjectId) {
+        if (qrImage) qrImage.style.display = 'none';
+        if (qrSpinner) {
+            qrSpinner.style.display = 'block';
+            qrSpinner.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creando sesión en la nube...';
+        }
+        if (urlInput) urlInput.value = '';
+        if (btnDisconnect) btnDisconnect.style.display = 'none';
+        
+        await createSyncSession();
+    } else {
+        const link = `${window.location.origin}${window.location.pathname}?syncId=${state.syncObjectId}`;
+        if (urlInput) urlInput.value = link;
+        if (qrSpinner) qrSpinner.style.display = 'none';
+        if (qrImage) {
+            qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(link)}`;
+            qrImage.style.display = 'block';
+        }
+        if (btnDisconnect) btnDisconnect.style.display = 'block';
+    }
+}
+
+async function createSyncSession() {
+    try {
+        const payload = {
+            name: `jatapp_demo_session`,
+            data: {
+                state: state,
+                updatedAt: Date.now()
+            }
+        };
+        const res = await fetch('https://api.restful-api.dev/objects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.id) {
+                state.syncObjectId = data.id;
+                lastSyncTimestamp = Date.now();
+                saveStateToStorage();
+                startSyncInterval();
+                renderSyncStatusInModal();
+                showToast('Sesión Creada', 'Sincronización en la nube lista para vincular.', 'success');
+            }
+        }
+    } catch (e) {
+        console.error("Failed to create sync session:", e);
+        const qrSpinner = document.getElementById('sync-qr-spinner');
+        if (qrSpinner) qrSpinner.innerHTML = '<span class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Error al conectar a la nube.</span>';
+    }
+}
+
+function disconnectSyncSession() {
+    if (syncInterval) clearInterval(syncInterval);
+    syncInterval = null;
+    
+    state.syncObjectId = null;
+    saveStateToStorage();
+    
+    updateHeaderSyncButton(false);
+    
+    const modal = document.getElementById('modal-cloud-sync');
+    if (modal) modal.style.display = 'none';
+    
+    showToast('Sincronización Desconectada', 'Se detuvo la replicación en la nube.', 'warning');
+}
+
+async function pushStateToSyncAPI() {
+    if (!state.syncObjectId || isPushingSync) return;
+    isPushingSync = true;
+    try {
+        const payload = {
+            name: `jatapp_demo_session`,
+            data: {
+                state: state,
+                updatedAt: Date.now()
+            }
+        };
+        await fetch(`https://api.restful-api.dev/objects/${state.syncObjectId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        lastSyncTimestamp = Date.now();
+    } catch (e) {
+        console.error("Cloud push failed:", e);
+    } finally {
+        isPushingSync = false;
+    }
+}
+
+async function pullStateFromSyncAPI() {
+    if (!state.syncObjectId || isPushingSync) return;
+    try {
+        const res = await fetch(`https://api.restful-api.dev/objects/${state.syncObjectId}`);
+        if (res.status === 404) {
+            // If deleted or expired, gracefully disconnect
+            disconnectSyncSession();
+            return;
+        }
+        if (!res.ok) return;
+        const result = await res.json();
+        
+        if (result && result.data && result.data.state) {
+            const remoteTime = result.data.updatedAt || 0;
+            // Only update if remote state is newer
+            if (remoteTime > lastSyncTimestamp) {
+                const prevRole = activeRole;
+                const prevTab = activeTab;
+                
+                state = result.data.state;
+                lastSyncTimestamp = remoteTime;
+                
+                // Keep local storage synced
+                try {
+                    localStorage.setItem('jatapp_demo_state', JSON.stringify(state));
+                } catch(e){}
+                
+                // Re-render dashboard
+                renderAll();
+                
+                // Maintain local presentation role
+                if (activeRole !== prevRole) {
+                    selectPresentationRole(prevRole);
+                }
+                
+                showToast('Central Actualizada', 'Cambios remotos sincronizados desde la nube.', 'info', false);
+            }
+        }
+    } catch (e) {
+        console.error("Cloud pull failed:", e);
     }
 }
