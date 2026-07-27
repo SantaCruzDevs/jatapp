@@ -1847,28 +1847,25 @@ async function renderSyncStatusInModal() {
 
 async function createSyncSession() {
     try {
+        const randCode = Math.floor(1000 + Math.random() * 9000);
+        const syncId = `JAT-${randCode}`;
+        
         const payload = {
-            name: `jatapp_demo_session`,
-            data: {
-                state: state,
-                updatedAt: Date.now()
-            }
+            state: state,
+            updatedAt: Date.now()
         };
-        const res = await fetch('https://api.restful-api.dev/objects', {
+        const res = await fetch(`/api/sync?syncId=${syncId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
         if (res.ok) {
-            const data = await res.json();
-            if (data && data.id) {
-                state.syncObjectId = data.id;
-                lastSyncTimestamp = Date.now();
-                saveStateToStorage();
-                startSyncInterval();
-                renderSyncStatusInModal();
-                showToast('Sesión Creada', 'Sincronización en la nube lista para vincular.', 'success');
-            }
+            state.syncObjectId = syncId;
+            lastSyncTimestamp = Date.now();
+            saveStateToStorage();
+            startSyncInterval();
+            renderSyncStatusInModal();
+            showToast('Sesión Creada', 'Sincronización en la nube lista para vincular.', 'success');
         }
     } catch (e) {
         console.error("Failed to create sync session:", e);
@@ -1897,13 +1894,10 @@ async function pushStateToSyncAPI() {
     isPushingSync = true;
     try {
         const payload = {
-            name: `jatapp_demo_session`,
-            data: {
-                state: state,
-                updatedAt: Date.now()
-            }
+            state: state,
+            updatedAt: Date.now()
         };
-        await fetch(`https://api.restful-api.dev/objects/${state.syncObjectId}`, {
+        await fetch(`/api/sync?syncId=${state.syncObjectId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1919,34 +1913,24 @@ async function pushStateToSyncAPI() {
 async function pullStateFromSyncAPI() {
     if (!state.syncObjectId || isPushingSync) return;
     try {
-        const res = await fetch(`https://api.restful-api.dev/objects/${state.syncObjectId}`);
-        if (res.status === 404) {
-            // If deleted or expired, gracefully disconnect
-            disconnectSyncSession();
-            return;
-        }
+        const res = await fetch(`/api/sync?syncId=${state.syncObjectId}`);
         if (!res.ok) return;
         const result = await res.json();
         
-        if (result && result.data && result.data.state) {
-            const remoteTime = result.data.updatedAt || 0;
-            // Only update if remote state is newer
+        if (result && result.state) {
+            const remoteTime = result.updatedAt || 0;
             if (remoteTime > lastSyncTimestamp) {
                 const prevRole = activeRole;
-                const prevTab = activeTab;
                 
-                state = result.data.state;
+                state = result.state;
                 lastSyncTimestamp = remoteTime;
                 
-                // Keep local storage synced
                 try {
                     localStorage.setItem('jatapp_demo_state', JSON.stringify(state));
                 } catch(e){}
                 
-                // Re-render dashboard
                 renderAll();
                 
-                // Maintain local presentation role
                 if (activeRole !== prevRole) {
                     selectPresentationRole(prevRole);
                 }
@@ -1961,26 +1945,23 @@ async function pullStateFromSyncAPI() {
 
 async function joinSyncSession(syncId) {
     try {
-        const res = await fetch(`https://api.restful-api.dev/objects/${syncId}`);
+        const res = await fetch(`/api/sync?syncId=${syncId}`);
         if (res.ok) {
             const result = await res.json();
-            if (result && result.data && result.data.state) {
+            if (result && result.state) {
                 const prevRole = activeRole;
                 
-                state = result.data.state;
+                state = result.state;
                 state.syncObjectId = syncId;
-                lastSyncTimestamp = result.data.updatedAt || Date.now();
+                lastSyncTimestamp = result.updatedAt || Date.now();
                 
-                // Guardar localmente
                 try {
                     localStorage.setItem('jatapp_demo_state', JSON.stringify(state));
                 } catch(e){}
                 
-                // Iniciar ciclo de sincronización e interfaz
                 startSyncInterval();
                 renderAll();
                 
-                // Conservar rol local
                 if (activeRole !== prevRole) {
                     selectPresentationRole(prevRole);
                 }

@@ -80,11 +80,11 @@ All notable changes to this project will be documented in this file.
 - Hotfix de error de sintaxis en `app.js`:
     - Se removió una llave de cierre duplicada (`}`) accidental en la función `renderDriverReport` que rompía la inicialización y ejecución del script tanto en PC como en móviles.
 - Implementación de Sincronización en la Nube Multidispositivo para Demos en Vivo:
-    - Se inyectó un módulo de replicación remota basado en peticiones REST asíncronas contra un almacén temporal de datos en la nube.
-    - Se añadió el botón **Sincronizar Celular** en la barra superior. Al activarse, genera una sesión remota única y despliega un modal con un código QR interactivo generado mediante una API de QR pública.
-    - Captura automática por URL: Al escanear el QR con la cámara del celular, el teléfono abre el sitio web con el parámetro `?syncId=...`, se conecta a la sesión de forma inmediata sin necesidad de ingresar códigos manualmente y comienza a escuchar cambios.
-    - Sincronización bidireccional reactiva: Se configuró un bucle inteligente de sondeo (polling cada 3.5 segundos) que descarga las modificaciones de la central en la nube y sincroniza el layout. De forma paralela, cualquier acción realizada (creación de carrera, asignación, tránsitos, cobros) empuja el nuevo estado inmediatamente a la nube, manteniendo las pantallas de la PC y los celulares en vivo.
-    - Hotfix de colisión de estados (Overwriting Race Condition): Se introdujo la función `joinSyncSession` para que el dispositivo secundario (celular) descargue primero los datos existentes en la nube antes de activar la sincronización, evitando que el teléfono sobreescriba la nube con sus datos por defecto locales al inicializarse.
+    - Se creó un backend propio e independiente mediante una **Serverless Function de Vercel (`api/sync.js`)** integrada directamente en el proyecto, que maneja y almacena en caché en memoria los estados de las sesiones en vivo de forma instantánea.
+    - Se ajustaron las reglas de redirección en `vercel.json` para permitir la ejecución de rutas `/api/*` aisladas del renderizado del frontend.
+    - Se simplificaron los códigos de vinculación: ahora se autogeneran códigos cortos tipo **`JAT-XXXX`** en lugar de largos identificadores alfanuméricos de bases de datos externas, facilitando la lectura humana y la compatibilidad.
+    - Se migró el frontend de `app.js` para consumir este nuevo endpoint `/api/sync?syncId=JAT-XXXX`, superando por completo las limitaciones de tamaño de carga útil (HTTP 500 por límites de longitud de strings de APIs de prueba externas) y restricciones de tasa de peticiones (CORS/HTTP 429).
+
 
 
 

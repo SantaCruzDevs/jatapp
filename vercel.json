@@ -1,6 +1,7 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/(.*)", "destination": "/apps/jat-demo/$1" }
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/((?!api/).*)", "destination": "/apps/jat-demo/$1" }
   ]
 }
