@@ -50,8 +50,10 @@ export default function Sidebar({
 
   // Auto-close mobile drawer when pathname changes
   useEffect(() => {
-    closeSidebar();
-  }, [pathname, closeSidebar]);
+    if (isOpen) {
+      closeSidebar();
+    }
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close drawer on ESC key press
   useEffect(() => {

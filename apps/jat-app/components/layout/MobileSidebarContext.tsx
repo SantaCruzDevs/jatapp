@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
 interface MobileSidebarContextType {
   isOpen: boolean;
@@ -19,9 +19,9 @@ const MobileSidebarContext = createContext<MobileSidebarContextType>({
 export const MobileSidebarProvider = ({ children }: { children: React.ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const openSidebar = () => setIsOpen(true);
-  const closeSidebar = () => setIsOpen(false);
-  const toggleSidebar = () => setIsOpen((prev) => !prev);
+  const openSidebar = useCallback(() => setIsOpen(true), []);
+  const closeSidebar = useCallback(() => setIsOpen(false), []);
+  const toggleSidebar = useCallback(() => setIsOpen((prev) => !prev), []);
 
   return (
     <MobileSidebarContext.Provider value={{ isOpen, openSidebar, closeSidebar, toggleSidebar }}>
