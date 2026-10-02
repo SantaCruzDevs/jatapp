@@ -92,6 +92,7 @@ export default function Sidebar({
       href: '/admin',
       icon: LayoutDashboard,
       roles: ['SUPERADMIN', 'ADMIN'],
+      exact: true,
     },
     {
       label: 'Centro de Operaciones',
@@ -104,12 +105,14 @@ export default function Sidebar({
       href: '/driver',
       icon: Bike,
       roles: ['DRIVER'],
+      exact: true,
     },
     {
       label: 'Mi Balance',
       href: '/driver/balance',
       icon: Wallet,
       roles: ['DRIVER'],
+      exact: true,
     },
     {
       label: role === 'DRIVER' ? 'Historial de Carreras' : 'Tickets Digitales',
@@ -249,7 +252,9 @@ export default function Sidebar({
         <nav className="space-y-1">
           {filteredNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
+            const isActive = item.exact
+              ? pathname === item.href
+              : pathname === item.href || pathname.startsWith(item.href + '/');
 
             return (
               <Link
