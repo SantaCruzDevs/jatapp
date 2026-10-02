@@ -69,6 +69,39 @@ export async function getProfiles(filters?: { role?: string; search?: string }):
 
 export async function updateProfile(id: string, payload: { full_name?: string; phone?: string | null; avatar_url?: string | null }) {
   const supabase = createBrowserClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('Usuario no autenticado.');
+  }
+
+  // Fetch target profile first to check protection rules
+  const { data: targetProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', id)
+    .single();
+
+  if (targetProfile) {
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const activeRole = currentProfile?.role;
+
+    // Rule 1: Nobody can modify a SUPERADMIN profile unless it is the SUPERADMIN updating their own profile
+    if (targetProfile.role === 'SUPERADMIN' && user.id !== id) {
+      throw new Error('Permiso denegado: El perfil del usuario Soporte (SUPERADMIN) es inmutable.');
+    }
+
+    // Rule 2: An ADMIN profile can ONLY be modified by SUPERADMIN or by the ADMIN themselves
+    if (targetProfile.role === 'ADMIN' && user.id !== id && activeRole !== 'SUPERADMIN') {
+      throw new Error('Permiso denegado: Solo el usuario Soporte (SUPERADMIN) puede modificar administrativamente a un Administrador.');
+    }
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .update({
@@ -93,7 +126,12 @@ export async function updateProfileRole(targetUserId: string, newRole: UserRole)
   // Validate current user role
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error('Usuario no autenticado');
+    throw new Error('Usuario no autenticado.');
+  }
+
+  // Prohibit self role change
+  if (targetUserId === user.id) {
+    throw new Error('Permiso denegado: Un usuario no puede cambiar administrativamente su propio rol.');
   }
 
   const { data: currentProfile } = await supabase
@@ -104,8 +142,23 @@ export async function updateProfileRole(targetUserId: string, newRole: UserRole)
 
   const activeRole = currentProfile?.role;
 
+  // Fetch target profile's current role
+  const { data: targetProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', targetUserId)
+    .single();
+
+  if (targetProfile?.role === 'SUPERADMIN') {
+    throw new Error('Permiso denegado: El rol del usuario Soporte (SUPERADMIN) no puede ser modificado.');
+  }
+
   if (newRole === 'SUPERADMIN') {
     throw new Error('Permiso denegado: No está permitido promover ni asignar usuarios al rol interno Soporte (SUPERADMIN).');
+  }
+
+  if (targetProfile?.role === 'ADMIN' && activeRole !== 'SUPERADMIN') {
+    throw new Error('Permiso denegado: Solo el usuario Soporte (SUPERADMIN) puede cambiar el rol de un Administrador.');
   }
 
   if (activeRole === 'SUPERVISOR' && !['OPERATOR', 'DRIVER', 'CLIENT_USER'].includes(newRole)) {

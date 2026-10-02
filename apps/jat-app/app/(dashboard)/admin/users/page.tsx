@@ -36,8 +36,9 @@ export default function UsersAdminPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Active User Role
+  // Active User Role & ID
   const [activeUserRole, setActiveUserRole] = useState<UserRole | null>(null);
+  const [activeUserId, setActiveUserId] = useState<string | null>(null);
 
   // Filter state
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
@@ -79,6 +80,30 @@ export default function UsersAdminPage() {
   const [completeZone, setCompleteZone] = useState<string>('');
   const [completing, setCompleting] = useState<boolean>(false);
 
+  // Security Helper: Determine if active user can edit target profile
+  const canEditProfile = (targetProf: ProfileWithDriver): boolean => {
+    if (targetProf.role === 'SUPERADMIN') {
+      return activeUserId === targetProf.id;
+    }
+    if (targetProf.role === 'ADMIN') {
+      return activeUserRole === 'SUPERADMIN' || activeUserId === targetProf.id;
+    }
+    if (targetProf.role === 'SUPERVISOR') {
+      return ['SUPERADMIN', 'ADMIN'].includes(activeUserRole || '') || activeUserId === targetProf.id;
+    }
+    return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(activeUserRole || '') || activeUserId === targetProf.id;
+  };
+
+  // Security Helper: Determine if active user can change target profile's role
+  const canChangeRole = (targetProf: ProfileWithDriver): boolean => {
+    if (!activeUserRole) return false;
+    if (targetProf.id === activeUserId) return false;
+    if (targetProf.role === 'SUPERADMIN') return false;
+    if (targetProf.role === 'ADMIN' && activeUserRole !== 'SUPERADMIN') return false;
+    if (activeUserRole === 'SUPERVISOR') return true;
+    return ['SUPERADMIN', 'ADMIN'].includes(activeUserRole);
+  };
+
   // Load active user profile role
   useEffect(() => {
     async function loadActiveRole() {
@@ -86,6 +111,7 @@ export default function UsersAdminPage() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          setActiveUserId(user.id);
           const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).single();
           if (prof?.role) {
             setActiveUserRole(prof.role as UserRole);
@@ -577,13 +603,20 @@ export default function UsersAdminPage() {
                       </td>
 
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => openEditModal(prof)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#334155] hover:bg-[#475569] text-white rounded-lg transition-colors font-medium text-xs font-heading"
-                        >
-                          <Edit3 className="w-3.5 h-3.5 text-[#FDDE12]" />
-                          <span>Editar Rol / Datos</span>
-                        </button>
+                        {canEditProfile(prof) ? (
+                          <button
+                            onClick={() => openEditModal(prof)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#334155] hover:bg-[#475569] text-white rounded-lg transition-colors font-medium text-xs font-heading"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-[#FDDE12]" />
+                            <span>Editar Rol / Datos</span>
+                          </button>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-800/80 border border-slate-700 text-slate-400 rounded-lg text-[11px] font-medium cursor-not-allowed" title="Protegido por políticas de seguridad de roles">
+                            <Lock className="w-3 h-3 text-slate-500" />
+                            <span>Protegido</span>
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -1042,8 +1075,9 @@ export default function UsersAdminPage() {
                 </label>
                 <select
                   value={editRole}
+                  disabled={!canChangeRole(editingProfile)}
                   onChange={(e) => setEditRole(e.target.value as UserRole)}
-                  className="w-full bg-[#0F172A] border border-[#334155] text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#FDDE12] cursor-pointer"
+                  className="w-full bg-[#0F172A] border border-[#334155] text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#FDDE12] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed font-medium"
                 >
                   <option value="CLIENT_USER">Empresa / Cliente (CLIENT_USER)</option>
                   <option value="DRIVER">Motoquero (DRIVER)</option>
@@ -1059,9 +1093,24 @@ export default function UsersAdminPage() {
                     <option value="SUPERADMIN" disabled>Soporte (Lectura únicamente)</option>
                   )}
                 </select>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Nota: El cambio de rol está sujeto a las políticas RBAC y RLS aplicables en la base de datos.
-                </p>
+                {!canChangeRole(editingProfile) ? (
+                  <p className="text-[11px] text-amber-400 font-medium mt-1.5 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                    <span>
+                      {editingProfile.id === activeUserId
+                        ? 'No puedes modificar tu propio rol por seguridad.'
+                        : editingProfile.role === 'SUPERADMIN'
+                        ? 'El rol Soporte (SUPERADMIN) es inmutable y protegido por RLS.'
+                        : editingProfile.role === 'ADMIN' && activeUserRole !== 'SUPERADMIN'
+                        ? 'Solo un usuario Soporte (SUPERADMIN) puede modificar el rol de un Administrador.'
+                        : 'No tienes permisos suficientes para cambiar el rol de este usuario.'}
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Nota: El cambio de rol está sujeto a las políticas RBAC y RLS aplicables en la base de datos.
+                  </p>
+                )}
               </div>
 
               <div className="pt-3 border-t border-[#334155] flex items-center justify-end gap-3">
