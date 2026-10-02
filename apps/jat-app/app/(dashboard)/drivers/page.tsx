@@ -399,7 +399,7 @@ export default function DriversModulePage() {
         subtitle="Gestión de flota, arqueo de caja previo, módulo transaccional de liquidaciones 80/20 y pagos"
       />
 
-      <main className="p-6 space-y-6 flex-1 max-w-7xl mx-auto w-full">
+      <main className="p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 flex-1 max-w-7xl mx-auto w-full">
         {/* Global Feedback Banners */}
         {errorMsg && (
           <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-sm flex items-center justify-between animate-fadeIn">
@@ -923,7 +923,7 @@ export default function DriversModulePage() {
               <p className="p-12 text-center text-slate-400 text-xs">No hay liquidaciones registradas en el sistema aún.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full text-left text-xs border-collapse min-w-[800px]">
                   <thead>
                     <tr className="border-b border-[#334155] bg-[#0F172A]/50 text-slate-400 font-semibold uppercase">
                       <th className="py-3.5 px-4">Código / Motoquero</th>

@@ -2,7 +2,7 @@ import React from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCompanyPortalEnabled } from '@/lib/services/system-settings';
-import Sidebar from '@/components/layout/Sidebar';
+import DashboardLayoutClient from '../(dashboard)/DashboardLayoutClient';
 
 export default async function CompanyPortalLayout({
   children,
@@ -44,13 +44,12 @@ export default async function CompanyPortalLayout({
     if (!linkData || linkData.length === 0) {
       // User is CLIENT_USER but not linked to any company yet
       return (
-        <div className="flex min-h-screen bg-[#0F172A] text-slate-100">
-          <Sidebar
-            role={role}
-            userName={profile?.full_name || 'Usuario Cliente'}
-            avatarUrl={profile?.avatar_url || undefined}
-          />
-          <main className="flex-1 p-8 flex items-center justify-center">
+        <DashboardLayoutClient
+          role={role}
+          userName={profile?.full_name || 'Usuario Cliente'}
+          avatarUrl={profile?.avatar_url || undefined}
+        >
+          <main className="flex-1 p-4 sm:p-8 flex items-center justify-center">
             <div className="bg-[#1E293B] border border-[#334155] rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-xl">
               <h2 className="text-lg font-bold text-white font-heading">Cuenta en Proceso de Vinculación</h2>
               <p className="text-xs text-slate-300 leading-relaxed">
@@ -61,21 +60,20 @@ export default async function CompanyPortalLayout({
               </p>
             </div>
           </main>
-        </div>
+        </DashboardLayoutClient>
       );
     }
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0F172A] text-slate-100">
-      <Sidebar
-        role={role}
-        userName={profile?.full_name || 'Usuario Empresa'}
-        avatarUrl={profile?.avatar_url || undefined}
-      />
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+    <DashboardLayoutClient
+      role={role}
+      userName={profile?.full_name || 'Usuario Empresa'}
+      avatarUrl={profile?.avatar_url || undefined}
+    >
+      <div className="flex-1 flex flex-col min-w-0">
         {children}
       </div>
-    </div>
+    </DashboardLayoutClient>
   );
 }

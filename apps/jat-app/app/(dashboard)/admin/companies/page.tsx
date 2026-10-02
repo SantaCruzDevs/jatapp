@@ -404,7 +404,7 @@ export default function CompaniesAdminPage() {
         subtitle="Gestión de clientes corporativos y usuarios vinculados en public.companies"
       />
 
-      <main className="p-8 space-y-6">
+      <main className="p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
         {/* Banner Alert Messages */}
         {errorMsg && (
           <div className="p-4 bg-rose-950/80 border border-rose-800 text-rose-200 rounded-xl text-xs flex items-center justify-between shadow-lg">
@@ -488,7 +488,7 @@ export default function CompaniesAdminPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-300">
+              <table className="w-full text-left text-xs text-slate-300 min-w-[700px]">
                 <thead className="bg-[#0F172A] text-slate-400 font-semibold uppercase tracking-wider border-b border-[#334155]">
                   <tr>
                     <th className="px-6 py-3.5">Empresa / Razón Social</th>

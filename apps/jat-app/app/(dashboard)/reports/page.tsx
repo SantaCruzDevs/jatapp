@@ -153,7 +153,7 @@ export default function ExecutiveReportsPage() {
         />
       </div>
 
-      <main className="p-6 space-y-6 flex-1 max-w-[1700px] w-full mx-auto">
+      <main className="p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 flex-1 max-w-[1700px] w-full mx-auto">
         {/* Feedback Banners */}
         {errorMsg && (
           <div className="print:hidden p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-sm flex items-center justify-between">
@@ -438,7 +438,7 @@ export default function ExecutiveReportsPage() {
                   <p className="p-12 text-center text-slate-400 text-xs">No hay movimientos registrados en este rango de fechas.</p>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs border-collapse">
+                    <table className="w-full text-left text-xs border-collapse min-w-[700px]">
                       <thead>
                         <tr className="border-b border-[#334155] bg-[#0F172A]/50 text-slate-400 font-semibold uppercase">
                           <th className="py-3 px-4">Fecha</th>

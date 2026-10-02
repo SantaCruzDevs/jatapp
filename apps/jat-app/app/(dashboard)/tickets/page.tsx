@@ -177,7 +177,7 @@ export default function TicketsPage() {
         subtitle={isDriver ? "Historial completo de mis carreras completadas y comprobantes de servicio" : "Emisión, visualización, impresión y verificación de comprobantes digitales de servicio MotoJAT"}
       />
 
-      <main className="p-6 space-y-6 flex-1 max-w-7xl mx-auto w-full">
+      <main className="p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 flex-1 max-w-7xl mx-auto w-full">
         {/* Feedback Banner */}
         {errorMsg && (
           <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-sm flex items-center justify-between animate-fadeIn">
@@ -317,7 +317,7 @@ export default function TicketsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full text-left border-collapse text-xs min-w-[750px]">
                 <thead>
                   <tr className="border-b border-[#334155] bg-[#0F172A]/50 text-slate-400 font-semibold uppercase tracking-wider">
                     <th className="py-3.5 px-4">Comprobante / Carrera</th>

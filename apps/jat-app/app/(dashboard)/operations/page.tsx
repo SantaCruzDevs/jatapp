@@ -1066,7 +1066,7 @@ export default function OperationsPage() {
         subtitle="Tablero Kanban de despacho express, monitoreo de flotas y auditoría en tiempo real"
       />
 
-      <main className="p-6 space-y-6 flex-1 flex flex-col max-w-[1700px] w-full mx-auto">
+      <main className="p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 flex-1 flex flex-col max-w-[1700px] w-full mx-auto">
         {/* Banner Feedback */}
         {errorMsg && (
           <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-sm flex items-center justify-between animate-fadeIn">

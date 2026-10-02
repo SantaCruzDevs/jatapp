@@ -7,20 +7,20 @@ import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, 
   Users,
-  UserCheck,
   FileText,
   Key,
-  Building2,
   Headset, 
   Wallet, 
   LogOut,
   Bike,
   BarChart3,
   Settings,
-  HardDrive
+  HardDrive,
+  X
 } from 'lucide-react';
 import { logoutUser } from '@/lib/services/auth';
 import { getCompanyPortalEnabled } from '@/lib/services/system-settings';
+import { useMobileSidebar } from '@/components/layout/MobileSidebarContext';
 
 interface SidebarProps {
   role?: string;
@@ -36,6 +36,7 @@ export default function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [portalEnabled, setPortalEnabled] = useState<boolean>(false);
+  const { isOpen, closeSidebar } = useMobileSidebar();
 
   useEffect(() => {
     async function checkPortal() {
@@ -47,8 +48,25 @@ export default function Sidebar({
     checkPortal();
   }, [role]);
 
+  // Auto-close mobile drawer when pathname changes
+  useEffect(() => {
+    closeSidebar();
+  }, [pathname, closeSidebar]);
+
+  // Close drawer on ESC key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        closeSidebar();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, closeSidebar]);
+
   const handleLogout = async () => {
     try {
+      closeSidebar();
       await logoutUser();
       router.push('/login');
       router.refresh();
@@ -175,24 +193,36 @@ export default function Sidebar({
 
   const filteredNavItems = navItems.filter((item) => item.roles.includes(role));
 
-  return (
-    <aside className="w-64 bg-[#0F172A] border-r border-[#1E293B] min-h-screen flex flex-col justify-between p-4 flex-shrink-0">
+  const renderContent = (isMobile = false) => (
+    <div className="flex flex-col justify-between h-full min-h-full">
       <div className="space-y-6">
-        {/* Logo JATapp */}
-        <div className="flex items-center gap-3 px-2 py-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FDDE12] to-amber-300 p-0.5 shadow-lg shadow-[#FDDE12]/10 flex items-center justify-center">
-            <div className="w-full h-full bg-[#0F172A] rounded-[10px] flex items-center justify-center">
-              <Bike className="w-6 h-6 text-[#FDDE12]" />
+        {/* Logo JATapp & Optional Close Button */}
+        <div className="flex items-center justify-between px-2 py-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FDDE12] to-amber-300 p-0.5 shadow-lg shadow-[#FDDE12]/10 flex items-center justify-center">
+              <div className="w-full h-full bg-[#0F172A] rounded-[10px] flex items-center justify-center">
+                <Bike className="w-6 h-6 text-[#FDDE12]" />
+              </div>
+            </div>
+            <div>
+              <span className="font-heading font-black text-xl text-white tracking-wider block leading-none">
+                MOTO<span className="text-[#FDDE12]">JAT</span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium tracking-widest uppercase block mt-1">
+                Plataforma v1.0
+              </span>
             </div>
           </div>
-          <div>
-            <span className="font-heading font-black text-xl text-white tracking-wider block leading-none">
-              MOTO<span className="text-[#FDDE12]">JAT</span>
-            </span>
-            <span className="text-[10px] text-slate-400 font-medium tracking-widest uppercase block mt-1">
-              Plataforma v1.0
-            </span>
-          </div>
+
+          {isMobile && (
+            <button
+              onClick={closeSidebar}
+              className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-white bg-[#1E293B] border border-[#334155] transition-colors"
+              aria-label="Cerrar menú"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* User Badge */}
@@ -223,6 +253,7 @@ export default function Sidebar({
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={closeSidebar}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs transition-all duration-200 ${
                   isActive
                     ? 'bg-[#FDDE12] text-[#0F172A] font-bold shadow-md shadow-[#FDDE12]/20'
@@ -247,6 +278,35 @@ export default function Sidebar({
           <span>Cerrar Sesión</span>
         </button>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar (visible on lg: >= 1024px) */}
+      <aside className="hidden lg:flex lg:w-64 bg-[#0F172A] border-r border-[#1E293B] min-h-screen flex-col justify-between p-4 flex-shrink-0 z-30">
+        {renderContent(false)}
+      </aside>
+
+      {/* Mobile Backdrop Overlay (visible when open on < lg) */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 lg:hidden transition-opacity"
+          onClick={closeSidebar}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Slide-Over Drawer (visible when open on < lg) */}
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-[#0F172A] border-r border-[#1E293B]
+          flex flex-col justify-between p-4 shadow-2xl transition-transform duration-300 ease-in-out lg:hidden overflow-y-auto
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        {renderContent(true)}
+      </aside>
+    </>
   );
 }

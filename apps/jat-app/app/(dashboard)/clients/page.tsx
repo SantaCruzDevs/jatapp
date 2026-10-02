@@ -271,7 +271,7 @@ export default function ClientsPage() {
         subtitle="Gestión unificada de empresas corporativas y clientes particulares de MotoJAT"
       />
 
-      <main className="p-6 space-y-6 flex-1 max-w-7xl mx-auto w-full">
+      <main className="p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 flex-1 max-w-7xl mx-auto w-full">
         {/* Banner Feedback */}
         {errorMsg && (
           <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-sm flex items-center justify-between animate-fadeIn">
@@ -298,11 +298,11 @@ export default function ClientsPage() {
         )}
 
         {/* Navigation Tabs (EMPRESAS vs PARTICULARES) */}
-        <div className="flex items-center justify-between gap-4 border-b border-[#334155] pb-3">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border-b border-[#334155] pb-3">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setMainTab('empresas')}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+              className={`flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
                 mainTab === 'empresas'
                   ? 'bg-[#FDDE12] text-[#0F172A] shadow-md shadow-[#FDDE12]/20'
                   : 'bg-[#1E293B] text-slate-400 hover:text-white border border-[#334155]'
@@ -314,7 +314,7 @@ export default function ClientsPage() {
 
             <button
               onClick={() => setMainTab('particulares')}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+              className={`flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
                 mainTab === 'particulares'
                   ? 'bg-[#FDDE12] text-[#0F172A] shadow-md shadow-[#FDDE12]/20'
                   : 'bg-[#1E293B] text-slate-400 hover:text-white border border-[#334155]'
@@ -325,8 +325,8 @@ export default function ClientsPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
-            <form onSubmit={handleSearchSubmit} className="relative w-64 sm:w-72">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-72">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
@@ -344,7 +344,7 @@ export default function ClientsPage() {
             {mainTab === 'empresas' ? (
               <button
                 onClick={() => handleOpenCreateModal('company')}
-                className="px-4 py-2 bg-[#FDDE12] hover:bg-[#e2c60e] text-[#0F172A] font-bold rounded-xl text-xs flex items-center gap-2 transition-all shadow-md active:scale-95 flex-shrink-0"
+                className="px-4 py-2 bg-[#FDDE12] hover:bg-[#e2c60e] text-[#0F172A] font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 flex-shrink-0"
               >
                 <UserPlus className="w-4 h-4" />
                 <span>+ Nueva Empresa</span>
@@ -352,7 +352,7 @@ export default function ClientsPage() {
             ) : (
               <button
                 onClick={() => handleOpenCreateModal('particular')}
-                className="px-4 py-2 bg-[#FDDE12] hover:bg-[#e2c60e] text-[#0F172A] font-bold rounded-xl text-xs flex items-center gap-2 transition-all shadow-md active:scale-95 flex-shrink-0"
+                className="px-4 py-2 bg-[#FDDE12] hover:bg-[#e2c60e] text-[#0F172A] font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 flex-shrink-0"
               >
                 <UserPlus className="w-4 h-4" />
                 <span>+ Nuevo Particular</span>

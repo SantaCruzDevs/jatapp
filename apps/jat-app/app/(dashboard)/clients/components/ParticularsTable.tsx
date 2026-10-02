@@ -49,7 +49,7 @@ export default function ParticularsTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse text-xs">
+      <table className="w-full text-left border-collapse text-xs min-w-[650px]">
         <thead>
           <tr className="border-b border-[#334155] bg-[#0F172A]/50 text-slate-400 font-semibold uppercase tracking-wider">
             <th className="py-3.5 px-4">Cliente Particular</th>

@@ -354,7 +354,7 @@ export default function DriverPage() {
         subtitle="Pantalla operacional principal del motoquero — En ruta y próximas asignaciones"
       />
 
-      <main className="p-6 space-y-6 flex-1 max-w-5xl mx-auto w-full">
+      <main className="p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 flex-1 max-w-5xl mx-auto w-full">
         {/* Banners */}
         {successMsg && (
           <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-sm flex items-center justify-between animate-fadeIn font-semibold">
@@ -392,11 +392,11 @@ export default function DriverPage() {
             <p className="text-xs">Pide a la Central de Operaciones vincular tu usuario a un número de móvil.</p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Header Badge */}
-            <div className="bg-[#1E293B] p-4 rounded-2xl border border-[#334155] shadow-lg flex items-center justify-between">
+            <div className="bg-[#1E293B] p-3.5 sm:p-4 rounded-2xl border border-[#334155] shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-[#0F172A] border-2 border-[#FDDE12] text-[#FDDE12] font-black flex items-center justify-center text-xl shadow">
+                <div className="w-12 h-12 rounded-xl bg-[#0F172A] border-2 border-[#FDDE12] text-[#FDDE12] font-black flex items-center justify-center text-xl shadow flex-shrink-0">
                   #{driver.movil_number}
                 </div>
                 <div>
@@ -409,7 +409,7 @@ export default function DriverPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0F172A] rounded-xl border border-[#334155]">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0F172A] rounded-xl border border-[#334155] self-end sm:self-auto">
                 <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                 <span className="font-bold text-white text-sm">{Number(driver.rating).toFixed(1)}</span>
               </div>
@@ -417,8 +417,8 @@ export default function DriverPage() {
 
             {/* CARRERA ACTUAL */}
             {primaryRide ? (
-              <div className="bg-[#1E293B] p-6 rounded-2xl border-4 border-[#FDDE12] shadow-2xl space-y-5 relative">
-                <div className="flex items-center justify-between pb-3 border-b border-[#334155]">
+              <div className="bg-[#1E293B] p-4 sm:p-6 rounded-2xl border-4 border-[#FDDE12] shadow-2xl space-y-4 sm:space-y-5 relative">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#334155]">
                   <div className="flex items-center gap-3">
                     <div className="p-3 bg-[#FDDE12]/20 border border-[#FDDE12]/40 text-[#FDDE12] rounded-xl">
                       <Bike className="w-7 h-7 animate-bounce" />
@@ -667,7 +667,7 @@ export default function DriverPage() {
                     COMPLETADAS HOY ({todayCount})
                   </h3>
                 </div>
-                <div className="text-xs font-mono flex items-center gap-3">
+                <div className="text-xs font-mono flex flex-wrap items-center gap-x-4 gap-y-1">
                   <span>Facturado: <strong className="text-emerald-400">Bs. {todayGross.toFixed(2)}</strong></span>
                   <span>Efectivo: <strong className="text-amber-400">Bs. {todayCash.toFixed(2)}</strong></span>
                   <span>QR: <strong className="text-sky-400">Bs. {todayQr.toFixed(2)}</strong></span>
@@ -679,7 +679,7 @@ export default function DriverPage() {
                 <p className="p-6 text-center text-slate-500 text-xs">No has completado carreras en la jornada de hoy.</p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
+                  <table className="w-full text-left text-xs border-collapse min-w-[600px]">
                     <thead>
                       <tr className="border-b border-[#334155] bg-[#0F172A]/40 text-slate-400 font-semibold uppercase">
                         <th className="py-3 px-4">Código</th>

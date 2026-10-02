@@ -15,7 +15,7 @@ export default async function AdminDashboardPage() {
         subtitle="Vista panorámica de supervisión estratégica y control del sistema MotoJAT"
       />
 
-      <main className="p-8 space-y-6">
+      <main className="p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
         {/* Welcome Card */}
         <div className="bg-[#1E293B] border border-[#334155] rounded-2xl p-6 relative overflow-hidden shadow-lg">
           <div className="flex items-start justify-between relative z-10">

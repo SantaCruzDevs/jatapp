@@ -125,7 +125,7 @@ export default function PermissionsAdminPage() {
         subtitle="Administración explícita de privilegios en public.user_permissions"
       />
 
-      <main className="p-8 space-y-6">
+      <main className="p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
         {/* Banner Alert Messages */}
         {errorMsg && (
           <div className="p-4 bg-rose-950/80 border border-rose-800 text-rose-200 rounded-xl text-xs flex items-center justify-between shadow-lg">
