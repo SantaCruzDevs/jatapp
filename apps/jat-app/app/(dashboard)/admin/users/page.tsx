@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Topbar from '@/components/layout/Topbar';
-import { getProfiles, updateProfile, updateProfileRole, createUser, completeDriverProfile, ProfileWithDriver } from '@/lib/services/users';
+import { getProfiles, updateProfile, updateProfileRole, createUser, completeDriverProfile, formatProfileError, ProfileWithDriver } from '@/lib/services/users';
 import { uploadAvatar, deleteAvatar, validateAvatarFile } from '@/lib/services/storage';
 import { createClient } from '@/lib/supabase/client';
 import { UserRole } from '@/types/database.types';
@@ -379,8 +379,12 @@ export default function UsersAdminPage() {
       closeEditModal();
       fetchUsers();
     } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Error al guardar los cambios del perfil');
+      console.error('Error guardando los cambios del perfil:', err);
+      const friendlyMsg = formatProfileError(err, {
+        targetRole: editingProfile?.role,
+        newRole: editRole,
+      });
+      setErrorMsg(friendlyMsg);
     } finally {
       setSaving(false);
     }
