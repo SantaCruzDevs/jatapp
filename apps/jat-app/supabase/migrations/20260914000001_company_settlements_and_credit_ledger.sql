@@ -11,7 +11,7 @@
 -- ===================================================
 
 -- 1. Enable btree_gist extension for Exclusion constraint on (company_id, tstzrange)
-CREATE EXTENSION IF NOT EXISTS btree_gist;
+CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA extensions;
 
 -- 2. CREATE TABLE public.company_settlements
 CREATE TABLE IF NOT EXISTS public.company_settlements (

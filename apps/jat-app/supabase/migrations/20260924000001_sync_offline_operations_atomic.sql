@@ -152,29 +152,23 @@ BEGIN
     END IF;
 
     -- 6. If payment_method = Ticket and company_id is provided -> create corporate ticket
-    IF p_payment_method = 'Ticket' AND p_company_id IS NOT NULL THEN
-        -- Check active company contract
-        SELECT id INTO v_contract_id
-        FROM public.company_contracts
-        WHERE company_id = p_company_id AND status = 'active'
-        LIMIT 1;
-
+    IF p_payment_method = 'Ticket' AND p_company_id IS NOT NULL AND p_driver_id IS NOT NULL THEN
         v_ticket_code := 'TK-' || p_ride_code;
 
         INSERT INTO public.corporate_tickets (
             ride_id,
-            company_id,
+            driver_id,
+            amount,
             ticket_code,
-            contract_id,
             status,
             created_at,
             updated_at
         ) VALUES (
             v_ride_id,
-            p_company_id,
+            p_driver_id,
+            COALESCE(p_total_fare, 0.00),
             v_ticket_code,
-            v_contract_id,
-            CASE WHEN p_status = 'completed' THEN 'active' ELSE 'active' END,
+            'pending',
             p_created_at,
             p_updated_at
         ) ON CONFLICT (ride_id) DO NOTHING;

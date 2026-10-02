@@ -12,7 +12,11 @@ CREATE POLICY corporate_tickets_select_policy ON public.corporate_tickets
     OR driver_id IN (SELECT id FROM public.drivers WHERE profile_id = auth.uid())
     OR (
       public.get_user_role() = 'CLIENT_USER'
-      AND company_id IN (SELECT company_id FROM public.company_users WHERE profile_id = auth.uid())
+      AND ride_id IN (
+        SELECT id FROM public.rides WHERE company_id IN (
+          SELECT company_id FROM public.company_users WHERE profile_id = auth.uid()
+        )
+      )
     )
   );
 
