@@ -290,19 +290,20 @@ export default function DriversModulePage() {
     });
 
     setIsSubmittingSettlement(false);
-    setIsConfirmCloseModalOpen(false);
 
     if (error) {
       setErrorMsg(error.message);
       return;
     }
 
+    setIsConfirmCloseModalOpen(false);
     setSuccessMsg(`Liquidación CERRADA exitosamente (ID: ${settlementId?.slice(0, 8)}...). Las carreras han sido marcadas como liquidadas.`);
     // Reset inputs
     setBonusAmount('0');
     setDiscountAmount('0');
     setDiscountReason('');
     setDesiredNetBalance('');
+
     loadInitialData();
     loadCandidateSummary();
   };
@@ -823,15 +824,6 @@ export default function DriversModulePage() {
                   <button
                     type="button"
                     disabled={isSubmittingSettlement || candidateSummary.total_rides === 0}
-                    onClick={handleSaveDraft}
-                    className="px-5 py-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold transition-all disabled:opacity-40"
-                  >
-                    Guardar Borrador (Draft)
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isSubmittingSettlement || candidateSummary.total_rides === 0}
                     onClick={handleOpenConfirmCloseModal}
                     className="px-6 py-3 bg-[#FDDE12] hover:bg-[#e2c60e] text-[#0F172A] font-extrabold rounded-xl text-xs flex items-center gap-2 transition-all shadow-lg disabled:opacity-40"
                   >
@@ -1113,9 +1105,16 @@ export default function DriversModulePage() {
               </div>
             </div>
 
-            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-[11px] flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-              <span>Esta acción marcará de forma atómica is_settled = TRUE en las {candidateSummary.total_rides} carreras.</span>
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-[11px] flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-white">
+                  Al confirmar, las {candidateSummary.total_rides} carreras seleccionadas quedarán cerradas y no podrán volver a incluirse en otra liquidación.
+                </p>
+                <p className="text-[10px] text-amber-200/80 mt-0.5">
+                  Verifica los importes antes de confirmar. Esta operación es definitiva.
+                </p>
+              </div>
             </div>
 
             <div className="pt-2 flex items-center justify-end gap-3">
