@@ -114,10 +114,10 @@ export default function CompanyHeader({
         </div>
       </div>
 
-      {/* Info Strip (Primary Contact + Portal Summary) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+      {/* Info Strip (Primary Contact) */}
+      <div className="pt-1">
         {/* Primary Contact Box */}
-        <div className="p-3 bg-[#0F172A]/70 border border-amber-500/30 rounded-xl flex items-center gap-3">
+        <div className="p-3.5 bg-[#0F172A]/70 border border-amber-500/30 rounded-xl flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center flex-shrink-0">
             <Star className="w-4 h-4 fill-amber-400" />
           </div>
@@ -134,29 +134,6 @@ export default function CompanyHeader({
             ) : (
               <p className="text-xs text-slate-500 italic">Sin contacto principal asignado</p>
             )}
-          </div>
-        </div>
-
-        {/* Portal Access Status Box */}
-        <div className="p-3 bg-[#0F172A]/70 border border-[#334155] rounded-xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-              portalEnabled ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-slate-800 text-slate-500 border border-slate-700'
-            }`}>
-              {portalEnabled ? <ShieldCheck className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Acceso al Portal Empresa</span>
-              <p className="text-xs font-bold text-white">
-                {portalEnabled ? 'Habilitado (Acceso vía NIT)' : 'Deshabilitado (Solo MotoJAT Admin)'}
-              </p>
-            </div>
-          </div>
-          <div className="text-right">
-            <span className="text-[10px] text-slate-500 font-mono block">Usuario Portal</span>
-            <span className="text-xs font-mono font-semibold text-slate-300">
-              {company.nit ? `NIT: ${company.nit}` : 'Sin NIT'}
-            </span>
           </div>
         </div>
       </div>

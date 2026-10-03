@@ -4,10 +4,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   getCompanyAccountSummary, 
   getCompanyAccountMovements, 
+  getPaymentAllocatedRides,
   registerCompanyPayment, 
   registerCompanyAdjustment, 
   CompanyAccountSummary, 
-  CompanyMovement 
+  CompanyMovement,
+  AllocatedRideItem
 } from '@/lib/services/company-account';
 import { getJatOperationalWeek } from '@/lib/utils/date-helpers';
 import { 
@@ -17,7 +19,12 @@ import {
   AlertCircle, 
   Loader2, 
   X, 
-  Receipt 
+  Receipt,
+  FileText,
+  Eye,
+  Building2,
+  Calendar,
+  Check
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -38,6 +45,9 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
   // Modals
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
+  const [selectedPaymentForDetail, setSelectedPaymentForDetail] = useState<CompanyMovement | null>(null);
+  const [allocatedRides, setAllocatedRides] = useState<AllocatedRideItem[]>([]);
+  const [loadingAllocations, setLoadingAllocations] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Payment Form Fields
@@ -102,6 +112,17 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
     loadAccountData();
   }, [loadAccountData]);
 
+  // Open Payment Allocations Detail Modal
+  const handleOpenPaymentDetail = async (movement: CompanyMovement) => {
+    setSelectedPaymentForDetail(movement);
+    setLoadingAllocations(true);
+    setAllocatedRides([]);
+
+    const { allocations } = await getPaymentAllocatedRides(movement.id);
+    setAllocatedRides(allocations);
+    setLoadingAllocations(false);
+  };
+
   // Submit Payment
   const handleSavePayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,7 +156,7 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
       return;
     }
 
-    setSuccessMsg(`Pago de Bs. ${Number(paymentAmount).toFixed(2)} registrado exitosamente.`);
+    setSuccessMsg(`Pago de Bs. ${Number(paymentAmount).toFixed(2)} registrado e imputado exitosamente.`);
     setIsPaymentModalOpen(false);
     setPaymentAmount(0);
     setPaymentRef('');
@@ -202,178 +223,151 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
         </div>
       )}
 
-      {/* Toolbar Header Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-[#0F172A]/70 p-4 rounded-xl border border-[#334155]">
+      {/* Main Financial Balance Header Card */}
+      {summary && (
+        <div className="bg-[#0F172A]/80 border-2 border-[#FDDE12]/40 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-[#FDDE12] uppercase tracking-wider">Saldo Pendiente Actual</span>
+              {summary.cobranza_status === 'PAGADO' && (
+                <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full text-[10px] font-bold">PAGADO</span>
+              )}
+              {summary.cobranza_status === 'PARCIALMENTE_PAGADO' && (
+                <span className="px-2.5 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/30 rounded-full text-[10px] font-bold">PARCIALMENTE PAGADO</span>
+              )}
+              {summary.cobranza_status === 'PENDIENTE' && (
+                <span className="px-2.5 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-full text-[10px] font-bold">PENDIENTE</span>
+              )}
+            </div>
+            <div className="text-3xl sm:text-4xl font-black text-white font-mono">
+              Bs. {summary.pending_balance.toFixed(2)}
+            </div>
+            <p className="text-xs text-slate-400">
+              Estado financiero consolidado de la cuenta corporativa
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap w-full md:w-auto">
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value as 'all' | 'today' | 'week' | 'month')}
+              className="bg-[#1E293B] border border-[#334155] text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#FDDE12]"
+            >
+              <option value="all">Todo el Historial</option>
+              <option value="today">Hoy</option>
+              <option value="week">Esta Semana</option>
+              <option value="month">Este Mes</option>
+            </select>
+
+            <button
+              onClick={handleOpenPaymentModal}
+              className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-[#0F172A] font-bold rounded-xl text-xs flex items-center gap-2 transition-all shadow-lg active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Registrar Pago</span>
+            </button>
+
+            <button
+              onClick={() => setIsAdjustmentModalOpen(true)}
+              className="px-4 py-2.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold rounded-xl text-xs flex items-center gap-2 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Registrar Ajuste</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Financial Movements List Header */}
+      <div className="flex items-center justify-between pt-2">
         <div>
           <h3 className="text-sm font-bold text-white flex items-center gap-2 font-heading">
             <CreditCard className="w-4 h-4 text-[#FDDE12]" />
-            <span>Estado de Cuenta Corriente</span>
+            <span>Movimientos Financieros</span>
           </h3>
           <p className="text-xs text-slate-400">
-            Consolidado de consumos por vales corporativos, abonos recibidos y trazabilidad contable
+            Registro de abonos, notas de crédito/débito y consolidaciones contables
           </p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value as 'all' | 'today' | 'week' | 'month')}
-            className="bg-[#1E293B] border border-[#334155] text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-[#FDDE12]"
-          >
-            <option value="all">Todo el Historial</option>
-            <option value="today">Hoy</option>
-            <option value="week">Esta Semana</option>
-            <option value="month">Este Mes</option>
-          </select>
-
-          <button
-            onClick={handleOpenPaymentModal}
-            className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-[#0F172A] font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Registrar Pago</span>
-          </button>
-
-          <button
-            onClick={() => setIsAdjustmentModalOpen(true)}
-            className="px-3.5 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Registrar Ajuste</span>
-          </button>
         </div>
       </div>
 
+      {/* Movements Table */}
       {loading ? (
         <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-[#FDDE12]" />
           <span className="text-xs">Cargando estado de cuenta financiera...</span>
         </div>
-      ) : !summary ? (
-        <p className="p-12 text-center text-slate-400 text-xs">No se encontró información financiera para esta empresa.</p>
+      ) : movements.length === 0 ? (
+        <p className="p-12 text-center text-slate-400 text-xs bg-[#0F172A]/50 rounded-xl border border-[#334155]">
+          No hay movimientos financieros registrados en el período seleccionado.
+        </p>
       ) : (
-        <div className="space-y-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-[#0F172A]/70 border border-purple-500/30 rounded-xl p-4 space-y-1">
-              <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider block">TOTAL CARGOS (C)</span>
-              <div className="text-xl font-extrabold text-purple-400 font-mono">
-                Bs. {summary.total_charges.toFixed(2)}
-              </div>
-              <p className="text-[10px] text-slate-400">Consumos por tickets completados</p>
-            </div>
+        <div className="overflow-x-auto rounded-xl border border-[#334155]">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-[#334155] bg-[#0F172A]/80 text-slate-400 font-semibold uppercase tracking-wider">
+                <th className="py-3 px-4">Fecha & Hora</th>
+                <th className="py-3 px-4">Tipo Movimiento</th>
+                <th className="py-3 px-4">Comprobante / Referencia</th>
+                <th className="py-3 px-4">Detalle / Observaciones</th>
+                <th className="py-3 px-4 text-right">Importe (Bs.)</th>
+                <th className="py-3 px-4 text-right">Trazabilidad / Tickets</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#334155] text-slate-300 bg-[#1E293B]">
+              {movements.map((m) => (
+                <tr key={m.id} className="hover:bg-[#334155]/30 transition-colors">
+                  <td className="py-3.5 px-4 font-mono text-[11px] text-slate-300">
+                    {new Date(m.date).toLocaleDateString('es-BO')} {new Date(m.date).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })}
+                  </td>
 
-            <div className="bg-[#0F172A]/70 border border-emerald-500/30 rounded-xl p-4 space-y-1">
-              <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">TOTAL PAGOS (P)</span>
-              <div className="text-xl font-extrabold text-emerald-400 font-mono">
-                Bs. {summary.total_payments.toFixed(2)}
-              </div>
-              <p className="text-[10px] text-slate-400">Abonos recibidos de la empresa</p>
-            </div>
+                  <td className="py-3.5 px-4">
+                    {m.type === 'PAGO' && (
+                      <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold rounded text-[10px]">PAGO</span>
+                    )}
+                    {m.type === 'AJUSTE' && (
+                      <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-500/30 font-bold rounded text-[10px]">AJUSTE</span>
+                    )}
+                    {m.type === 'CIERRE' && (
+                      <span className="px-2.5 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/30 font-bold rounded text-[10px]">CIERRE</span>
+                    )}
+                  </td>
 
-            <div className="bg-[#0F172A]/70 border border-sky-500/30 rounded-xl p-4 space-y-1">
-              <span className="text-[10px] text-sky-400 font-bold uppercase tracking-wider block">TOTAL AJUSTES (A)</span>
-              <div className="text-xl font-extrabold text-sky-400 font-mono">
-                Bs. {summary.total_adjustments.toFixed(2)}
-              </div>
-              <p className="text-[10px] text-slate-400">Descuentos o notas aplicadas</p>
-            </div>
+                  <td className="py-3.5 px-4 font-mono font-bold text-white">
+                    {m.ticket_code}
+                    {m.reference_number && (
+                      <span className="text-[10px] text-slate-400 block font-normal font-sans">Ref: {m.reference_number}</span>
+                    )}
+                  </td>
 
-            <div className="bg-[#0F172A]/70 border-2 border-[#FDDE12]/50 rounded-xl p-4 space-y-1 shadow-lg">
-              <span className="text-[10px] text-[#FDDE12] font-extrabold uppercase tracking-wider block">SALDO PENDIENTE (S)</span>
-              <div className="text-xl font-extrabold text-white font-mono">
-                Bs. {summary.pending_balance.toFixed(2)}
-              </div>
-              <div className="pt-0.5">
-                {summary.cobranza_status === 'PAGADO' && (
-                  <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-bold">PAGADO</span>
-                )}
-                {summary.cobranza_status === 'PARCIALMENTE_PAGADO' && (
-                  <span className="px-2 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/30 rounded text-[10px] font-bold">PARCIALMENTE PAGADO</span>
-                )}
-                {summary.cobranza_status === 'PENDIENTE' && (
-                  <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded text-[10px] font-bold">PENDIENTE</span>
-                )}
-              </div>
-            </div>
-          </div>
+                  <td className="py-3.5 px-4">
+                    <p className="text-slate-200">{m.notes}</p>
+                    {m.payment_method && (
+                      <span className="text-[10px] text-slate-400 block font-mono">Método: {m.payment_method}</span>
+                    )}
+                  </td>
 
-          {/* Movements Table */}
-          <div className="overflow-x-auto rounded-xl border border-[#334155]">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-[#334155] bg-[#0F172A]/80 text-slate-400 font-semibold uppercase tracking-wider">
-                  <th className="py-3 px-4">Fecha & Hora</th>
-                  <th className="py-3 px-4">Tipo Movimiento</th>
-                  <th className="py-3 px-4">Comprobante / Carrera</th>
-                  <th className="py-3 px-4">Solicitante & Ruta / Detalle</th>
-                  <th className="py-3 px-4">Móvil</th>
-                  <th className="py-3 px-4 text-right">Importe (Bs.)</th>
-                  <th className="py-3 px-4 text-right">Detalle</th>
+                  <td className="py-3.5 px-4 text-right font-mono font-bold text-white">
+                    {m.type === 'PAGO' ? `- Bs. ${m.amount.toFixed(2)}` : m.type === 'AJUSTE' ? `Bs. ${m.amount.toFixed(2)}` : `+ Bs. ${m.amount.toFixed(2)}`}
+                  </td>
+
+                  <td className="py-3.5 px-4 text-right">
+                    {m.type === 'PAGO' ? (
+                      <button
+                        onClick={() => handleOpenPaymentDetail(m)}
+                        className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/30 transition-colors"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Ver Tickets</span>
+                      </button>
+                    ) : (
+                      <span className="text-slate-500 text-[10px]">—</span>
+                    )}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-[#334155] text-slate-300 bg-[#1E293B]">
-                {movements.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-500 text-xs">
-                      No hay movimientos financieros en el período seleccionado.
-                    </td>
-                  </tr>
-                ) : (
-                  movements.map((m) => (
-                    <tr key={m.id} className="hover:bg-[#334155]/30 transition-colors">
-                      <td className="py-3.5 px-4 font-mono text-[11px] text-slate-300">
-                        {new Date(m.date).toLocaleDateString('es-BO')} {new Date(m.date).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })}
-                      </td>
-
-                      <td className="py-3.5 px-4">
-                        {m.type === 'CARGO' && (
-                          <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-500/30 font-bold rounded text-[10px]">CARGO</span>
-                        )}
-                        {m.type === 'PAGO' && (
-                          <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold rounded text-[10px]">PAGO</span>
-                        )}
-                        {m.type === 'AJUSTE' && (
-                          <span className="px-2 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/30 font-bold rounded text-[10px]">AJUSTE</span>
-                        )}
-                      </td>
-
-                      <td className="py-3.5 px-4 font-mono font-bold text-white">
-                        {m.ticket_code}
-                        {m.ride_code && <span className="text-[10px] text-slate-400 block font-normal">Carrera: {m.ride_code}</span>}
-                      </td>
-
-                      <td className="py-3.5 px-4">
-                        <p className="font-semibold text-slate-200">{m.requester_person || m.notes}</p>
-                        {m.destination_address && <p className="text-[10px] text-slate-400 truncate max-w-xs">{m.destination_address}</p>}
-                      </td>
-
-                      <td className="py-3.5 px-4 text-slate-400">
-                        {m.driver_movil ? `Móvil #${m.driver_movil}` : '—'}
-                      </td>
-
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-white">
-                        {m.type === 'CARGO' ? `+ Bs. ${m.amount.toFixed(2)}` : m.type === 'PAGO' ? `- Bs. ${m.amount.toFixed(2)}` : `Bs. ${m.amount.toFixed(2)}`}
-                      </td>
-
-                      <td className="py-3.5 px-4 text-right">
-                        {m.ride_code ? (
-                          <Link
-                            href={`/tickets/${m.ride_code}`}
-                            className="text-[11px] text-sky-400 hover:underline font-semibold"
-                          >
-                            Ver Ticket
-                          </Link>
-                        ) : (
-                          <span className="text-slate-500 text-[10px]">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -511,16 +505,13 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
                 </label>
                 <input
                   type="number"
-                  step="0.50"
+                  step="0.01"
                   required
                   placeholder="Ej. -50.00 (Descuento) o 20.00 (Recargo)"
                   value={adjustmentAmount || ''}
                   onChange={(e) => setAdjustmentAmount(Number(e.target.value))}
                   className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-3.5 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-[#FDDE12]"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Usa valor negativo (ej. <span className="font-mono text-emerald-400">-50.00</span>) para notas de crédito o descuentos.
-                </p>
               </div>
 
               <div>
@@ -555,6 +546,149 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: DETALLE DE PAGO Y TICKETS CUBIERTOS (TRACEABILITY) */}
+      {selectedPaymentForDetail && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1E293B] border border-[#334155] rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4 animate-scaleUp max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-[#334155]">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-lg">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white font-heading">
+                    Detalle del Pago {selectedPaymentForDetail.ticket_code}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Desglose de impositividad y tickets corporativos cubiertos
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedPaymentForDetail(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Payment Summary Box */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#0F172A] p-4 rounded-xl border border-[#334155] text-xs">
+              <div>
+                <span className="text-[10px] text-slate-400 block font-semibold uppercase">Monto Registrado</span>
+                <span className="text-sm font-bold text-white font-mono">Bs. {selectedPaymentForDetail.amount.toFixed(2)}</span>
+              </div>
+
+              <div>
+                <span className="text-[10px] text-emerald-400 block font-semibold uppercase">Monto Aplicado</span>
+                <span className="text-sm font-bold text-emerald-400 font-mono">
+                  Bs. {(selectedPaymentForDetail.applied_amount !== undefined ? selectedPaymentForDetail.applied_amount : selectedPaymentForDetail.amount).toFixed(2)}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-[10px] text-sky-400 block font-semibold uppercase">Saldo a Favor</span>
+                <span className="text-sm font-bold text-sky-400 font-mono">
+                  Bs. {(selectedPaymentForDetail.overpayment_amount || 0).toFixed(2)}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-[10px] text-slate-400 block font-semibold uppercase">Método / Ref</span>
+                <span className="text-xs font-semibold text-slate-200 block truncate">
+                  {selectedPaymentForDetail.payment_method || '—'}
+                </span>
+                {selectedPaymentForDetail.reference_number && (
+                  <span className="text-[10px] font-mono text-slate-400 block truncate">
+                    {selectedPaymentForDetail.reference_number}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Allocated Tickets Header */}
+            <div>
+              <h4 className="text-xs font-bold text-white mb-2 flex items-center justify-between">
+                <span>Tickets / Carreras Cubiertos por este Pago ({allocatedRides.length})</span>
+                {selectedPaymentForDetail.overpayment_amount && selectedPaymentForDetail.overpayment_amount > 0 ? (
+                  <span className="text-[10px] text-sky-400 font-normal">
+                    Excedente de Bs. {selectedPaymentForDetail.overpayment_amount.toFixed(2)} resguardado en Crédito
+                  </span>
+                ) : null}
+              </h4>
+
+              {loadingAllocations ? (
+                <div className="p-8 text-center text-slate-400 flex flex-col items-center gap-2">
+                  <Loader2 className="w-6 h-6 animate-spin text-[#FDDE12]" />
+                  <span className="text-xs">Cargando tickets imputados...</span>
+                </div>
+              ) : allocatedRides.length === 0 ? (
+                <div className="p-6 bg-[#0F172A]/50 border border-[#334155] rounded-xl text-center space-y-1">
+                  <p className="text-xs text-slate-400">
+                    Este pago fue registrado previamente como abono directo a la cuenta corriente sin desglose de tickets específicos.
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    Los pagos posteriores realizarán la imputación automática FIFO a cada carrera.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-[#334155]">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-[#334155] bg-[#0F172A] text-slate-400 font-semibold uppercase text-[10px]">
+                        <th className="py-2.5 px-3">Vale / Ticket</th>
+                        <th className="py-2.5 px-3">Fecha Carrera</th>
+                        <th className="py-2.5 px-3">Solicitante / Ruta</th>
+                        <th className="py-2.5 px-3 text-right">Tarifa (Bs.)</th>
+                        <th className="py-2.5 px-3 text-right">Monto Aplicado</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#334155] text-slate-300 bg-[#1E293B]">
+                      {allocatedRides.map((item) => (
+                        <tr key={item.id} className="hover:bg-[#334155]/30">
+                          <td className="py-2.5 px-3">
+                            <span className="font-mono font-bold text-white block">{item.ride.ticket_code}</span>
+                            <span className="text-[10px] text-slate-400 font-mono">Carrera: {item.ride.ride_code}</span>
+                          </td>
+
+                          <td className="py-2.5 px-3 font-mono text-[10px] text-slate-400">
+                            {new Date(item.ride.created_at).toLocaleDateString('es-BO')}
+                          </td>
+
+                          <td className="py-2.5 px-3">
+                            <span className="font-semibold text-slate-200 block truncate max-w-xs">{item.ride.requester_person || '—'}</span>
+                            {item.ride.destination_address && (
+                              <span className="text-[10px] text-slate-400 block truncate max-w-xs">A: {item.ride.destination_address}</span>
+                            )}
+                          </td>
+
+                          <td className="py-2.5 px-3 text-right font-mono text-slate-400">
+                            Bs. {item.ride.total_fare.toFixed(2)}
+                          </td>
+
+                          <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">
+                            Bs. {item.amount_applied.toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-[#334155] flex justify-end">
+              <button
+                onClick={() => setSelectedPaymentForDetail(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold"
+              >
+                Cerrar Detalle
+              </button>
+            </div>
           </div>
         </div>
       )}

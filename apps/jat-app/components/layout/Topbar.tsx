@@ -70,11 +70,6 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
             <span className="xs:hidden">Activo</span>
           </div>
 
-          {/* Environment Tag */}
-          <div className="hidden md:flex items-center gap-1.5 text-xs text-slate-400 bg-[#0F172A] px-3 py-1.5 rounded-lg border border-[#334155]">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#FDDE12]" />
-            <span className="font-semibold text-slate-200">Producto Real</span>
-          </div>
         </div>
       </header>
     </>
