@@ -151,6 +151,37 @@ export async function createDriverSettlementAtomic(params: {
 }
 
 /**
+ * Creates and pays a driver settlement atomically in a single operation using RPC create_and_pay_driver_settlement_atomic.
+ * Sets settlement_status = 'closed' AND payment_status = 'paid' atomically.
+ */
+export async function createAndPayDriverSettlementAtomic(params: {
+  driver_id: string;
+  cutoff_at: string;
+  driver_commission_pct?: number;
+  bonus_amount?: number;
+  discount_amount?: number;
+  discount_reason?: string;
+}): Promise<{ settlementId: string | null; error: Error | null }> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase.rpc('create_and_pay_driver_settlement_atomic', {
+    p_driver_id: params.driver_id,
+    p_cutoff_at: params.cutoff_at,
+    p_driver_commission_pct: params.driver_commission_pct ?? 80.00,
+    p_bonus_amount: params.bonus_amount ?? 0.00,
+    p_discount_amount: params.discount_amount ?? 0.00,
+    p_discount_reason: params.discount_reason ?? null,
+  });
+
+  if (error) {
+    console.error('Error creating and paying driver settlement atomically:', error);
+    return { settlementId: null, error: new Error(error.message) };
+  }
+
+  return { settlementId: data as string, error: null };
+}
+
+/**
  * Confirms a draft settlement to closed atomically using confirm_draft_settlement_atomic.
  */
 export async function confirmDraftSettlementAtomic(

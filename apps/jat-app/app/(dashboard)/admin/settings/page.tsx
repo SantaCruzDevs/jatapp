@@ -26,6 +26,7 @@ export default function SettingsAdminPage() {
   const [loadingRole, setLoadingRole] = useState<boolean>(true);
   const [ticketFormat, setTicketFormat] = useState<TicketFormat>('detailed');
   const [companyPortalEnabled, setCompanyPortalEnabled] = useState<boolean>(false);
+  const [preSettlementsEnabled, setPreSettlementsEnabled] = useState<boolean>(false);
   const [loadingSetting, setLoadingSetting] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -68,6 +69,7 @@ export default function SettingsAdminPage() {
         const settings = await getSystemSettings();
         setTicketFormat(settings.ticketFormat);
         setCompanyPortalEnabled(settings.companyPortalEnabled);
+        setPreSettlementsEnabled(settings.preSettlementsEnabled);
       } catch (e) {
         console.error('Error loading settings:', e);
       } finally {
@@ -109,6 +111,32 @@ export default function SettingsAdminPage() {
     } finally {
       setSaving(false);
       setPendingPortalState(null);
+    }
+  };
+
+  const handleTogglePreSettlements = async (nextState: boolean) => {
+    if (nextState === preSettlementsEnabled) return;
+    setSaving(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const res = await saveSystemSettings({ preSettlementsEnabled: nextState });
+      if (res.success) {
+        setPreSettlementsEnabled(nextState);
+        setSuccessMsg(
+          nextState
+            ? 'Pre-liquidaciones ACTIVADAS. Las liquidaciones requerirán cierre previo antes del pago.'
+            : 'Pre-liquidaciones DESACTIVADAS. Las liquidaciones se cerrarán y pagarán en un solo paso atómico.'
+        );
+      } else {
+        setErrorMsg(res.error || 'Error al actualizar el estado de pre-liquidaciones.');
+      }
+    } catch (err: unknown) {
+      const error = err as Error;
+      setErrorMsg(error.message || 'Error al cambiar estado de pre-liquidaciones.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -264,6 +292,65 @@ export default function SettingsAdminPage() {
                 <strong>Nota de Operación Interna:</strong> Desactivar esta opción bloquea exclusivamente el acceso de usuarios externos con rol <code>CLIENT_USER</code> al portal. Las funciones administrativas de MotoJAT para empresas en <code>/admin/companies</code> continúan funcionando normalmente.
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Feature Flag Card: Pre-liquidaciones Habilitadas */}
+        <div className="bg-[#1E293B] border border-[#334155] rounded-2xl shadow-lg overflow-hidden">
+          <div className="p-6 border-b border-[#334155] flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-xl">
+                <Settings className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold font-heading text-white flex items-center gap-2">
+                  <span>Pre-liquidaciones habilitadas</span>
+                  <span className={`text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full border ${
+                    preSettlementsEnabled
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                      : 'bg-slate-700/50 text-slate-400 border-slate-600'
+                  }`}>
+                    {preSettlementsEnabled ? 'Activado (2 etapas)' : 'Desactivado (1 paso)'}
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400">Permite revisar y cerrar una liquidación antes de registrar el pago al motoquero.</p>
+              </div>
+            </div>
+
+            {/* Switch Toggle */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleTogglePreSettlements(!preSettlementsEnabled)}
+                disabled={saving}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-bold text-xs transition-all disabled:opacity-50 ${
+                  preSettlementsEnabled
+                    ? 'bg-amber-600/20 border-amber-500 text-amber-300 hover:bg-amber-600/30'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'
+                }`}
+              >
+                {preSettlementsEnabled ? (
+                  <>
+                    <ToggleRight className="w-5 h-5 text-amber-400" />
+                    <span>Activado</span>
+                  </>
+                ) : (
+                  <>
+                    <ToggleLeft className="w-5 h-5 text-slate-500" />
+                    <span>Desactivado</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6 bg-[#0F172A]/40 space-y-3">
+            <p className="text-xs text-slate-300 leading-relaxed">
+              <strong>Modo Desactivado (Por defecto):</strong> Al liquidar a un motoquero, la transacción se ejecuta en un solo paso atómico (<em>Confirmar y Pagar Liquidación</em>), registrando el cierre y el pago de forma inmediata (<code>CLOSED + PAID</code>).
+            </p>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              <strong>Modo Activado:</strong> Permite cerrar la liquidación en estado de pago pendiente (<code>CLOSED + PENDING</code>) y registrar el pago manualmente en una etapa posterior.
+            </p>
           </div>
         </div>
 

@@ -6,6 +6,7 @@ import { getDrivers, updateDriverStatus, DriverWithProfile } from '@/lib/service
 import {
   getDriverPreSettlementCandidateSummary,
   createDriverSettlementAtomic,
+  createAndPayDriverSettlementAtomic,
   confirmDraftSettlementAtomic,
   markSettlementAsPaidAtomic,
   voidDriverSettlementAtomic,
@@ -14,6 +15,7 @@ import {
   PreSettlementCandidateSummary,
   DriverSettlementWithDetails
 } from '@/lib/services/driver-settlements';
+import { getSystemSettings } from '@/lib/services/system-settings';
 import { DriverSettlementItem, DriverStatus, Ride } from '@/types/database.types';
 import { getCurrentUserProfileClient } from '@/lib/services/auth';
 import {
@@ -77,6 +79,7 @@ export default function DriversModulePage() {
   const [settlements, setSettlements] = useState<DriverSettlementWithDetails[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const [preSettlementsEnabled, setPreSettlementsEnabled] = useState<boolean>(false);
 
   // Global Banners
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -92,8 +95,8 @@ export default function DriversModulePage() {
   const [loadingCandidate, setLoadingCandidate] = useState(false);
   const [candidateError, setCandidateError] = useState<string | null>(null);
 
-  // Dual-Mode Adjustments (Bonus & Discount)
-  const [inputMode, setInputMode] = useState<'direct' | 'desired_amount'>('direct');
+  // Dual-Mode Adjustments (Default: desired_amount = Fijar Monto Final)
+  const [inputMode, setInputMode] = useState<'desired_amount' | 'direct'>('desired_amount');
   const [bonusAmount, setBonusAmount] = useState<string>('0');
   const [discountAmount, setDiscountAmount] = useState<string>('0');
   const [discountReason, setDiscountReason] = useState<string>('');
@@ -127,11 +130,15 @@ export default function DriversModulePage() {
     setLoadingData(true);
     setErrorMsg(null);
     try {
-      const [driversRes, settlementsRes] = await Promise.all([
+      const [driversRes, settlementsRes, sysSettings] = await Promise.all([
         getDrivers(),
         getDriverSettlements(),
+        getSystemSettings(),
       ]);
 
+      if (sysSettings) {
+        setPreSettlementsEnabled(sysSettings.preSettlementsEnabled);
+      }
       if (driversRes.data) {
         setDrivers(driversRes.data);
         if (driversRes.data.length > 0 && !selectedDriverId) {
@@ -280,14 +287,26 @@ export default function DriversModulePage() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    const { settlementId, error } = await createDriverSettlementAtomic({
+    const cutoffIso = new Date(cutoffAt).toISOString();
+    const commonParams = {
       driver_id: selectedDriverId,
-      cutoff_at: new Date(cutoffAt).toISOString(),
+      cutoff_at: cutoffIso,
       bonus_amount: numericBonus,
       discount_amount: numericDiscount,
       discount_reason: numericDiscount > 0 ? discountReason.trim() : undefined,
-      status: 'closed',
-    });
+    };
+
+    let result;
+    if (preSettlementsEnabled) {
+      result = await createDriverSettlementAtomic({
+        ...commonParams,
+        status: 'closed',
+      });
+    } else {
+      result = await createAndPayDriverSettlementAtomic(commonParams);
+    }
+
+    const { settlementId, error } = result;
 
     setIsSubmittingSettlement(false);
 
@@ -297,7 +316,12 @@ export default function DriversModulePage() {
     }
 
     setIsConfirmCloseModalOpen(false);
-    setSuccessMsg(`Liquidación CERRADA exitosamente (ID: ${settlementId?.slice(0, 8)}...). Las carreras han sido marcadas como liquidadas.`);
+    if (preSettlementsEnabled) {
+      setSuccessMsg(`Liquidación CERRADA exitosamente (ID: ${settlementId?.slice(0, 8)}...). El pago podrá ser registrado posteriormente.`);
+    } else {
+      setSuccessMsg(`Liquidación CERRADA y PAGADA exitosamente (ID: ${settlementId?.slice(0, 8)}...).`);
+    }
+
     // Reset inputs
     setBonusAmount('0');
     setDiscountAmount('0');
@@ -647,21 +671,21 @@ export default function DriversModulePage() {
                     <div className="flex items-center gap-1 bg-[#0F172A] p-1 rounded-xl border border-[#334155] text-xs">
                       <button
                         type="button"
-                        onClick={() => setInputMode('direct')}
-                        className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                          inputMode === 'direct' ? 'bg-[#FDDE12] text-[#0F172A]' : 'text-slate-400 hover:text-white'
+                        onClick={() => setInputMode('desired_amount')}
+                        className={`px-3.5 py-1.5 rounded-lg font-bold transition-all ${
+                          inputMode === 'desired_amount' ? 'bg-[#FDDE12] text-[#0F172A] shadow-sm' : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        Ingreso Directo
+                        Fijar Monto Final
                       </button>
                       <button
                         type="button"
-                        onClick={() => setInputMode('desired_amount')}
-                        className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                          inputMode === 'desired_amount' ? 'bg-[#FDDE12] text-[#0F172A]' : 'text-slate-400 hover:text-white'
+                        onClick={() => setInputMode('direct')}
+                        className={`px-3.5 py-1.5 rounded-lg font-bold transition-all ${
+                          inputMode === 'direct' ? 'bg-[#FDDE12] text-[#0F172A] shadow-sm' : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        Monto Deseado Final
+                        Ajustar con Bono/Descuento
                       </button>
                     </div>
                   </div>
@@ -828,7 +852,7 @@ export default function DriversModulePage() {
                     className="px-6 py-3 bg-[#FDDE12] hover:bg-[#e2c60e] text-[#0F172A] font-extrabold rounded-xl text-xs flex items-center gap-2 transition-all shadow-lg disabled:opacity-40"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Confirmar y Cerrar Liquidación</span>
+                    <span>{preSettlementsEnabled ? 'Confirmar y Cerrar Liquidación' : 'Confirmar y Pagar Liquidación'}</span>
                   </button>
                 </div>
 
@@ -1109,7 +1133,9 @@ export default function DriversModulePage() {
               <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-white">
-                  Al confirmar, las {candidateSummary.total_rides} carreras seleccionadas quedarán cerradas y no podrán volver a incluirse en otra liquidación.
+                  {preSettlementsEnabled
+                    ? `Al confirmar, las ${candidateSummary.total_rides} carreras seleccionadas quedarán cerradas. El pago podrá ser registrado posteriormente.`
+                    : `Al confirmar, las ${candidateSummary.total_rides} carreras seleccionadas quedarán cerradas y el pago al motoquero por Bs. ${finalNetBalance.toFixed(2)} será registrado inmediatamente.`}
                 </p>
                 <p className="text-[10px] text-amber-200/80 mt-0.5">
                   Verifica los importes antes de confirmar. Esta operación es definitiva.
@@ -1133,7 +1159,7 @@ export default function DriversModulePage() {
                 className="px-5 py-2 bg-[#FDDE12] hover:bg-[#e2c60e] text-[#0F172A] font-bold rounded-xl text-xs flex items-center gap-2 shadow-md"
               >
                 {isSubmittingSettlement && <Loader2 className="w-4 h-4 animate-spin" />}
-                <span>Confirmar y Cerrar Liquidación</span>
+                <span>{preSettlementsEnabled ? 'Confirmar y Cerrar Liquidación' : 'Confirmar y Pagar Liquidación'}</span>
               </button>
             </div>
           </div>

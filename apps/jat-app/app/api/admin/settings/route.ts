@@ -46,13 +46,28 @@ export async function GET() {
       companyPortalEnabled = valStr === 'true';
     }
 
+    // 3. Fetch PRE_SETTLEMENTS_ENABLED setting (Default: false)
+    const { data: preSettlementData } = await supabaseAdmin
+      .from('user_permissions')
+      .select('permission_key, created_at')
+      .like('permission_key', 'PRE_SETTLEMENT_CFG:%')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    let preSettlementsEnabled = false;
+    if (preSettlementData && preSettlementData.length > 0) {
+      const valStr = preSettlementData[0].permission_key.replace('PRE_SETTLEMENT_CFG:', '');
+      preSettlementsEnabled = valStr === 'true';
+    }
+
     return NextResponse.json({
       ticketFormat,
       companyPortalEnabled,
+      preSettlementsEnabled,
     });
   } catch (err: unknown) {
     console.error('Error in GET /api/admin/settings:', err);
-    return NextResponse.json({ ticketFormat: 'detailed', companyPortalEnabled: false });
+    return NextResponse.json({ ticketFormat: 'detailed', companyPortalEnabled: false, preSettlementsEnabled: false });
   }
 }
 
@@ -108,7 +123,11 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    const { ticketFormat, companyPortalEnabled } = body as { ticketFormat?: string; companyPortalEnabled?: boolean };
+    const { ticketFormat, companyPortalEnabled, preSettlementsEnabled } = body as {
+      ticketFormat?: string;
+      companyPortalEnabled?: boolean;
+      preSettlementsEnabled?: boolean;
+    };
 
     // Update Ticket Format if provided
     if (ticketFormat) {
@@ -167,10 +186,36 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Update PRE_SETTLEMENTS_ENABLED if provided
+    if (typeof preSettlementsEnabled === 'boolean') {
+      await supabaseAdmin
+        .from('user_permissions')
+        .delete()
+        .eq('profile_id', requester.id)
+        .like('permission_key', 'PRE_SETTLEMENT_CFG:%');
+
+      const { error: insertPreErr } = await supabaseAdmin
+        .from('user_permissions')
+        .insert([
+          {
+            profile_id: requester.id,
+            permission_key: `PRE_SETTLEMENT_CFG:${preSettlementsEnabled}`,
+          },
+        ]);
+
+      if (insertPreErr) {
+        return NextResponse.json(
+          { error: `Error al guardar estado de Pre-liquidaciones: ${insertPreErr.message}` },
+          { status: 500 }
+        );
+      }
+    }
+
     return NextResponse.json({
       message: 'Configuración actualizada exitosamente.',
       ticketFormat: ticketFormat || 'detailed',
       companyPortalEnabled: typeof companyPortalEnabled === 'boolean' ? companyPortalEnabled : false,
+      preSettlementsEnabled: typeof preSettlementsEnabled === 'boolean' ? preSettlementsEnabled : false,
     });
   } catch (err: unknown) {
     const error = err as Error;
