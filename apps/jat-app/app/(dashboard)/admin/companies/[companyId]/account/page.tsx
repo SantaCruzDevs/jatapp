@@ -710,10 +710,10 @@ export default function AdminCompanyAccountPage({ params }: AdminCompanyAccountP
               ) : allocatedRides.length === 0 ? (
                 <div className="p-6 bg-[#0F172A]/50 border border-[#334155] rounded-xl text-center space-y-1">
                   <p className="text-xs text-slate-400">
-                    Este pago fue registrado previamente como abono directo a la cuenta corriente sin desglose de tickets específicos.
+                    Pago histórico registrado sin desglose individual de tickets.
                   </p>
                   <p className="text-[11px] text-slate-500">
-                    Los pagos posteriores realizarán la imputación automática FIFO a cada carrera.
+                    Los pagos nuevos realizan la imputación automática FIFO a cada carrera de la cuenta.
                   </p>
                 </div>
               ) : (
