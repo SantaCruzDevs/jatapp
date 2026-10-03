@@ -405,7 +405,7 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
                 </label>
                 <input
                   type="number"
-                  step="0.50"
+                  step="0.01"
                   min="0.01"
                   required
                   placeholder="Ej. 500.00"
