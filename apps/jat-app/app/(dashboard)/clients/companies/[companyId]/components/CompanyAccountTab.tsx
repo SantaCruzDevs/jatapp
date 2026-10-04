@@ -28,6 +28,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+import { StatementPdfModal } from './StatementPdfModal';
+import { createClient } from '@/lib/supabase/client';
+
 interface CompanyAccountTabProps {
   companyId: string;
 }
@@ -39,12 +42,19 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  // Company details for PDF & Email
+  const [companyInfo, setCompanyInfo] = useState<{ business_name: string; email?: string | null }>({
+    business_name: 'Cargando...',
+    email: null,
+  });
+
   // Date Filter
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
 
   // Modals
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
+  const [isStatementPdfModalOpen, setIsStatementPdfModalOpen] = useState(false);
   const [selectedPaymentForDetail, setSelectedPaymentForDetail] = useState<CompanyMovement | null>(null);
   const [allocatedRides, setAllocatedRides] = useState<AllocatedRideItem[]>([]);
   const [loadingAllocations, setLoadingAllocations] = useState(false);
@@ -91,13 +101,21 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
     }
 
     try {
-      const [sumRes, movRes] = await Promise.all([
+      const supabase = createClient();
+      const [sumRes, movRes, compRes] = await Promise.all([
         getCompanyAccountSummary(companyId, startIso, endIso),
         getCompanyAccountMovements(companyId, startIso, endIso),
+        supabase.from('companies').select('business_name, email').eq('id', companyId).single(),
       ]);
 
       if (sumRes.summary) setSummary(sumRes.summary);
       if (movRes.movements) setMovements(movRes.movements);
+      if (compRes.data) {
+        setCompanyInfo({
+          business_name: compRes.data.business_name,
+          email: compRes.data.email,
+        });
+      }
 
       if (sumRes.error) setErrorMsg(sumRes.error.message);
     } catch (err: unknown) {
@@ -273,6 +291,14 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
             >
               <Plus className="w-4 h-4" />
               <span>+ Registrar Ajuste</span>
+            </button>
+
+            <button
+              onClick={() => setIsStatementPdfModalOpen(true)}
+              className="px-4 py-2.5 bg-[#FDDE12]/10 hover:bg-[#FDDE12]/20 text-[#FDDE12] border border-[#FDDE12]/30 font-bold rounded-xl text-xs flex items-center gap-2 transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Generar Estado de Cuenta</span>
             </button>
           </div>
         </div>
@@ -692,6 +718,15 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
           </div>
         </div>
       )}
+
+      {/* MODAL 4: GENERACIÓN Y PREVISUALIZACIÓN DE ESTADO DE CUENTA EN PDF */}
+      <StatementPdfModal
+        companyId={companyId}
+        companyName={companyInfo.business_name}
+        companyEmail={companyInfo.email}
+        isOpen={isStatementPdfModalOpen}
+        onClose={() => setIsStatementPdfModalOpen(false)}
+      />
     </div>
   );
 }
