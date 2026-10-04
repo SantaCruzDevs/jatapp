@@ -24,11 +24,15 @@ import {
   Eye,
   Building2,
   Calendar,
-  Check
+  Check,
+  Download,
+  Printer,
+  Send
 } from 'lucide-react';
 import Link from 'next/link';
 
 import { StatementPdfModal } from './StatementPdfModal';
+import { getPaymentLiquidationData, generatePaymentLiquidationPDF } from '@/lib/services/liquidation-pdf';
 import { createClient } from '@/lib/supabase/client';
 
 interface CompanyAccountTabProps {
@@ -59,6 +63,100 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
   const [allocatedRides, setAllocatedRides] = useState<AllocatedRideItem[]>([]);
   const [loadingAllocations, setLoadingAllocations] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Liquidation PDF Actions States
+  const [downloadingLiquidation, setDownloadingLiquidation] = useState(false);
+  const [sendingLiquidationEmail, setSendingLiquidationEmail] = useState(false);
+
+  // Liquidation Handlers
+  const handleDownloadLiquidation = async (paymentId: string) => {
+    setDownloadingLiquidation(true);
+    try {
+      const { payload, error } = await getPaymentLiquidationData(paymentId);
+      if (error || !payload) {
+        setErrorMsg(error?.message || 'Error al obtener datos de liquidación.');
+        return;
+      }
+      const { pdfBlob, fileName } = generatePaymentLiquidationPDF(payload);
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(pdfBlob);
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message || 'Error al generar PDF de liquidación.');
+    } finally {
+      setDownloadingLiquidation(false);
+    }
+  };
+
+  const handlePrintLiquidation = async (paymentId: string) => {
+    setDownloadingLiquidation(true);
+    try {
+      const { payload, error } = await getPaymentLiquidationData(paymentId);
+      if (error || !payload) {
+        setErrorMsg(error?.message || 'Error al obtener datos de liquidación.');
+        return;
+      }
+      const { pdfBlob } = generatePaymentLiquidationPDF(payload);
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const printWindow = window.open(blobUrl, '_blank');
+      if (printWindow) {
+        printWindow.focus();
+      }
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message || 'Error al imprimir liquidación.');
+    } finally {
+      setDownloadingLiquidation(false);
+    }
+  };
+
+  const handleSendLiquidationEmail = async (paymentId: string) => {
+    if (!companyInfo.email) {
+      setErrorMsg('Esta empresa no tiene un correo registrado en la base de datos.');
+      return;
+    }
+
+    setSendingLiquidationEmail(true);
+    setErrorMsg(null);
+    try {
+      const { payload, error } = await getPaymentLiquidationData(paymentId);
+      if (error || !payload) {
+        setErrorMsg(error?.message || 'Error al obtener datos de liquidación.');
+        return;
+      }
+
+      const { pdfArrayBuffer } = generatePaymentLiquidationPDF(payload);
+      const bytes = new Uint8Array(pdfArrayBuffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Pdf = btoa(binary);
+
+      const res = await fetch('/api/companies/send-liquidation-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id: companyId,
+          payment_id: paymentId,
+          pdf_base64: base64Pdf,
+        }),
+      });
+
+      const resData = await res.json();
+      if (res.ok && resData.success) {
+        setSuccessMsg(`Comprobante de Liquidación enviado a ${companyInfo.email}.`);
+      } else {
+        setErrorMsg(resData.error || 'No se pudo enviar el correo de liquidación.');
+      }
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message || 'Error de red al enviar correo de liquidación.');
+    } finally {
+      setSendingLiquidationEmail(false);
+    }
+  };
 
   // Payment Form Fields
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
@@ -677,19 +775,39 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
                       {allocatedRides.map((item) => (
                         <tr key={item.id} className="hover:bg-[#334155]/30">
                           <td className="py-2.5 px-3">
-                            <span className="font-mono font-bold text-white block">{item.ride.ticket_code}</span>
+                            <Link
+                              href={`/t/${item.ride.ride_code}`}
+                              target="_blank"
+                              className="font-mono font-bold text-[#FDDE12] hover:underline hover:text-yellow-300 block text-xs"
+                              title="Ver detalle digital de la carrera"
+                            >
+                              {item.ride.ticket_code}
+                            </Link>
                             <span className="text-[10px] text-slate-400 font-mono">Carrera: {item.ride.ride_code}</span>
                           </td>
 
                           <td className="py-2.5 px-3 font-mono text-[10px] text-slate-400">
-                            {new Date(item.ride.created_at).toLocaleDateString('es-BO')}
+                            {new Date(item.ride.created_at).toLocaleString('es-BO', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
                           </td>
 
                           <td className="py-2.5 px-3">
-                            <span className="font-semibold text-slate-200 block truncate max-w-xs">{item.ride.requester_person || '—'}</span>
-                            {item.ride.destination_address && (
-                              <span className="text-[10px] text-slate-400 block truncate max-w-xs">A: {item.ride.destination_address}</span>
-                            )}
+                            <div className="flex items-center gap-1.5 font-semibold text-slate-200">
+                              <span>{item.ride.requester_person || '—'}</span>
+                              {item.ride.driver_movil && (
+                                <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 font-mono">
+                                  Móvil {item.ride.driver_movil}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-slate-400 block truncate max-w-xs">
+                              {item.ride.pickup_address ? `${item.ride.pickup_address} → ${item.ride.destination_address || 'No registrado'}` : item.ride.destination_address || 'No registrado'}
+                            </span>
                           </td>
 
                           <td className="py-2.5 px-3 text-right font-mono text-slate-400">
@@ -707,8 +825,49 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
               )}
             </div>
 
-            <div className="pt-3 border-t border-[#334155] flex justify-end">
+            {/* Document Action Buttons for Payment Liquidation */}
+            <div className="pt-3 border-t border-[#334155] flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadLiquidation(selectedPaymentForDetail.id)}
+                  disabled={allocatedRides.length === 0 || downloadingLiquidation}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-sky-400 font-semibold rounded-xl text-xs border border-slate-700 transition-colors disabled:opacity-40"
+                  title={allocatedRides.length === 0 ? "Sin asignaciones para generar liquidación" : "Descargar comprobante de liquidación PDF"}
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Descargar Liquidación PDF</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handlePrintLiquidation(selectedPaymentForDetail.id)}
+                  disabled={allocatedRides.length === 0 || downloadingLiquidation}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-[#FDDE12] font-semibold rounded-xl text-xs border border-slate-700 transition-colors disabled:opacity-40"
+                  title={allocatedRides.length === 0 ? "Sin asignaciones para imprimir liquidación" : "Imprimir comprobante de liquidación"}
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Imprimir</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSendLiquidationEmail(selectedPaymentForDetail.id)}
+                  disabled={allocatedRides.length === 0 || sendingLiquidationEmail || !companyInfo.email}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-[#0F172A] font-bold rounded-xl text-xs transition-colors disabled:opacity-40"
+                  title={!companyInfo.email ? "Empresa sin correo registrado" : "Enviar comprobante de liquidación al correo del cliente"}
+                >
+                  {sendingLiquidationEmail ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  <span>Enviar al Cliente</span>
+                </button>
+              </div>
+
               <button
+                type="button"
                 onClick={() => setSelectedPaymentForDetail(null)}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold"
               >
