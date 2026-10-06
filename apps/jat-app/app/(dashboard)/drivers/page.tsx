@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Topbar from '@/components/layout/Topbar';
-import { getDrivers, updateDriverStatus, deactivateDriver, DriverWithProfile } from '@/lib/services/drivers';
+import { getDrivers, updateDriverStatus, deactivateDriver, reactivateDriver, DriverWithProfile } from '@/lib/services/drivers';
 import {
   getDriverPreSettlementCandidateSummary,
   createDriverSettlementAtomic,
@@ -142,6 +142,31 @@ export default function DriversModulePage() {
       setBajaErrorMsg(err.message || 'Error al dar de baja al motoquero.');
     } finally {
       setDeactivatingDriver(false);
+    }
+  };
+
+  // Reactivation Modal State
+  const [selectedDriverForReactivation, setSelectedDriverForReactivation] = useState<DriverWithProfile | null>(null);
+  const [reactivatingDriver, setReactivatingDriver] = useState<boolean>(false);
+  const [reactivationErrorMsg, setReactivationErrorMsg] = useState<string | null>(null);
+
+  const handleReactivateDriverConfirm = async () => {
+    if (!selectedDriverForReactivation) return;
+    setReactivatingDriver(true);
+    setReactivationErrorMsg(null);
+    try {
+      const { data: updated, error } = await reactivateDriver(selectedDriverForReactivation.id);
+      if (error) {
+        setReactivationErrorMsg(error.message);
+        return;
+      }
+      setSuccessMsg(`El motoquero ${selectedDriverForReactivation.profile?.full_name || 'Motoquero'} fue reactivado exitosamente con el Móvil #${updated?.movil_number}.`);
+      setSelectedDriverForReactivation(null);
+      loadInitialData();
+    } catch (err: any) {
+      setReactivationErrorMsg(err.message || 'Error al reactivar al motoquero.');
+    } finally {
+      setReactivatingDriver(false);
     }
   };
 
@@ -572,10 +597,25 @@ export default function DriversModulePage() {
                     <div className="pt-2 border-t border-[#334155] flex items-center justify-between gap-2">
                       <span className="text-[11px] text-slate-400">Estado Operativo:</span>
                       {drv.status === 'baja' ? (
-                        <span className="px-2.5 py-1 bg-rose-950/80 border border-rose-800/60 text-rose-400 text-xs font-bold rounded-lg flex items-center gap-1">
-                          <Ban className="w-3 h-3" />
-                          <span>BAJA (Inactivo)</span>
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 bg-rose-950/80 border border-rose-800/60 text-rose-400 text-xs font-bold rounded-lg flex items-center gap-1">
+                            <Ban className="w-3 h-3" />
+                            <span>BAJA (Inactivo)</span>
+                          </span>
+                          {(!currentUserRole || ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'CEO'].includes((currentUserRole || '').toUpperCase())) && (
+                            <button
+                              onClick={() => {
+                                setReactivationErrorMsg(null);
+                                setSelectedDriverForReactivation(drv);
+                              }}
+                              title="Reactivar a este motoquero"
+                              className="px-2.5 py-1 bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-800/60 text-emerald-300 hover:text-emerald-200 text-[11px] font-bold rounded-lg transition-colors flex items-center gap-1 flex-shrink-0 cursor-pointer shadow-sm hover:shadow"
+                            >
+                              <RotateCcw className="w-3 h-3 text-emerald-400" />
+                              <span>Reactivar Motoquero</span>
+                            </button>
+                          )}
+                        </div>
                       ) : (
                         <div className="flex items-center gap-2">
                           <select
@@ -587,16 +627,16 @@ export default function DriversModulePage() {
                             <option value="busy">🟡 En Servicio</option>
                             <option value="offline">⚪ Desconectado</option>
                           </select>
-                          {['SUPERADMIN', 'ADMIN'].includes(currentUserRole || '') && (
+                          {(!currentUserRole || ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'CEO'].includes((currentUserRole || '').toUpperCase())) && (
                             <button
                               onClick={() => {
                                 setBajaErrorMsg(null);
                                 setSelectedDriverForBaja(drv);
                               }}
                               title="Dar de baja a este motoquero"
-                              className="px-2 py-1 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/40 text-rose-300 hover:text-rose-200 text-[11px] font-semibold rounded-lg transition-colors flex items-center gap-1 flex-shrink-0"
+                              className="px-2 py-1 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/40 text-rose-300 hover:text-rose-200 text-[11px] font-semibold rounded-lg transition-colors flex items-center gap-1 flex-shrink-0 cursor-pointer"
                             >
-                              <UserX className="w-3 h-3" />
+                              <UserX className="w-3 h-3 text-rose-400" />
                               <span>Baja</span>
                             </button>
                           )}
@@ -1559,6 +1599,72 @@ export default function DriversModulePage() {
                   </>
                 ) : (
                   <span>Confirmar Baja</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: REACTIVACIÓN DE MOTOQUERO */}
+      {selectedDriverForReactivation && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-[#1E293B] border border-emerald-800/60 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#334155]">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold text-base font-heading">
+                <RotateCcw className="w-5 h-5 text-emerald-400" />
+                <span>Confirmar Reactivación de Motoquero</span>
+              </div>
+              <button
+                onClick={() => setSelectedDriverForReactivation(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-300">
+              <p>
+                ¿Desea reactivar al motoquero <strong className="text-white">{selectedDriverForReactivation.profile?.full_name || 'Motoquero'}</strong> (Móvil histórico: <strong className="text-[#FDDE12]">#{selectedDriverForReactivation.movil_number}</strong>)?
+              </p>
+              <div className="p-3 bg-emerald-950/40 border border-emerald-800/40 rounded-xl space-y-1.5 text-[11px] text-emerald-300">
+                <p className="font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  Proceso de Asignación de Móvil:
+                </p>
+                <p className="text-slate-300 leading-relaxed">
+                  El motoquero será reactivado y podrá recibir un nuevo número de móvil. Si su número anterior continúa disponible, será recuperado. Si ya fue reutilizado, se asignará automáticamente el menor número disponible.
+                </p>
+              </div>
+
+              {reactivationErrorMsg && (
+                <div className="p-3 bg-rose-950 border border-rose-800 text-rose-200 text-xs rounded-xl font-medium">
+                  {reactivationErrorMsg}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#334155]">
+              <button
+                type="button"
+                onClick={() => setSelectedDriverForReactivation(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={reactivatingDriver}
+                onClick={handleReactivateDriverConfirm}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 disabled:opacity-50"
+              >
+                {reactivatingDriver ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Reactivando...</span>
+                  </>
+                ) : (
+                  <span>Confirmar Reactivación</span>
                 )}
               </button>
             </div>

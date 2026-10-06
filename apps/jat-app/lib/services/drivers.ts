@@ -161,3 +161,76 @@ export async function deactivateDriver(driverId: string): Promise<{ error: Error
 
   return { error: null };
 }
+
+/**
+ * Reactivates a driver from 'baja' status to 'available'.
+ * Case A: If their previous movil_number is still free among active drivers, they recover it.
+ * Case B: If their previous movil_number was reused by another active driver,
+ *         they automatically receive the lowest available positive integer.
+ * Invokes server RPC 'reactivate_driver' with fallback.
+ */
+export async function reactivateDriver(driverId: string): Promise<{ data: Driver | null; error: Error | null }> {
+  const supabase = createClient();
+
+  // 1. Check if driver exists and is in 'baja' status
+  const { data: driver, error: drvErr } = await supabase
+    .from('drivers')
+    .select('id, status, movil_number')
+    .eq('id', driverId)
+    .single();
+
+  if (drvErr || !driver) {
+    return { data: null, error: new Error('Motoquero no encontrado.') };
+  }
+
+  if (driver.status !== 'baja') {
+    return { data: null, error: new Error('El motoquero no se encuentra en estado BAJA.') };
+  }
+
+  // 2. Try server-side atomic RPC first
+  const { data: rpcData, error: rpcErr } = await supabase.rpc('reactivate_driver', { p_driver_id: driverId });
+
+  if (!rpcErr && rpcData) {
+    return { data: rpcData as Driver, error: null };
+  }
+
+  // 3. Fallback execution if RPC is not deployed yet on remote DB
+  const oldMovil = Number(driver.movil_number);
+
+  // Fetch all active drivers (status != 'baja')
+  const { data: activeDrivers } = await supabase
+    .from('drivers')
+    .select('id, movil_number')
+    .neq('status', 'baja')
+    .neq('id', driverId);
+
+  const activeSet = new Set((activeDrivers || []).map((d) => Number(d.movil_number)));
+  let assignedMovil = oldMovil;
+
+  if (activeSet.has(oldMovil) || !oldMovil || oldMovil <= 0) {
+    // Case B: Old movil is taken -> calculate lowest positive integer gap
+    let candidate = 1;
+    while (activeSet.has(candidate)) {
+      candidate++;
+    }
+    assignedMovil = candidate;
+  }
+
+  const { data: updatedDriver, error: updateErr } = await supabase
+    .from('drivers')
+    .update({
+      status: 'available',
+      movil_number: assignedMovil,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', driverId)
+    .select()
+    .single();
+
+  if (updateErr) {
+    console.error('Error reactivating driver:', updateErr);
+    return { data: null, error: new Error(`Error al reactivar el motoquero: ${updateErr.message}`) };
+  }
+
+  return { data: updatedDriver as Driver, error: null };
+}

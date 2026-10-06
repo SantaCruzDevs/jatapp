@@ -75,7 +75,28 @@ export async function getRides(filters?: { status?: RideStatus; search?: string 
 
   if (filters?.search && filters.search.trim() !== '') {
     const term = filters.search.trim();
-    query = query.or(`ride_code.ilike.%${term}%,requester_person.ilike.%${term}%,requester_company.ilike.%${term}%,pickup_address.ilike.%${term}%,destination_address.ilike.%${term}%`);
+
+    // Check if term contains numeric movil number (e.g., "20", "Móvil 20", "#20")
+    const numMovil = parseInt(term.replace(/\D/g, ''), 10);
+    const searchMovil = !isNaN(numMovil) && numMovil > 0 ? numMovil : null;
+
+    // Search matching driver IDs by profile name or movil_number
+    let driverQuery = supabase.from('drivers').select('id, movil_number, profile:profiles(full_name)');
+    if (searchMovil) {
+      driverQuery = driverQuery.or(`movil_number.eq.${searchMovil}`);
+    } else {
+      driverQuery = driverQuery.filter('profile.full_name', 'ilike', `%${term}%`);
+    }
+
+    const { data: matchedDrivers } = await driverQuery;
+    const matchedDriverIds = (matchedDrivers || []).map((d) => d.id);
+
+    let orConditions = `ride_code.ilike.%${term}%,requester_person.ilike.%${term}%,requester_company.ilike.%${term}%,pickup_address.ilike.%${term}%,destination_address.ilike.%${term}%`;
+    if (matchedDriverIds.length > 0) {
+      orConditions += `,driver_id.in.(${matchedDriverIds.join(',')})`;
+    }
+
+    query = query.or(orConditions);
   }
 
   const { data, error } = await query;

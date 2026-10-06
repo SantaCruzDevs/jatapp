@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json({
-        message: `Ficha de motoquero Móvil #${movil_number} registrada exitosamente.`,
+        message: `Ficha de motoquero Móvil #${newDriverRecord?.movil_number || movil_number} registrada exitosamente.`,
         driver: newDriverRecord,
       });
     }
@@ -333,8 +333,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: targetRole === 'DRIVER' 
-        ? `Motoquero Móvil #${movil_number} y usuario registrado exitosamente.` 
+      message: targetRole === 'DRIVER'
+        ? `Motoquero Móvil #${createdDriverData?.movil_number || movil_number} y usuario registrado exitosamente.`
         : 'Usuario registrado exitosamente.',
       user: profileData,
       driver: createdDriverData,
