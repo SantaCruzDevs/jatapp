@@ -304,13 +304,13 @@ export default function ExecutiveReportsPage() {
               <div className="space-y-6">
                 {/* 4 MAIN FINANCIAL METRICS CARDS */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Card 1: Facturación Total */}
+                  {/* Card 1: Valor Total de Carreras */}
                   <div className="bg-[#1E293B] border border-[#334155] rounded-2xl p-5 shadow-lg space-y-1">
-                    <span className="text-[11px] text-slate-400 font-bold uppercase">FACTURACIÓN BRUTA TOTAL (T)</span>
+                    <span className="text-[11px] text-slate-400 font-bold uppercase">VALOR TOTAL DE CARRERAS (T)</span>
                     <div className="text-2xl font-extrabold text-white font-mono">
                       Bs. {metrics.gross_facturacion.toFixed(2)}
                     </div>
-                    <p className="text-[11px] text-slate-400">{metrics.total_completed_rides} carreras completadas</p>
+                    <p className="text-[11px] text-slate-400">Base operativa para liquidación 80/20</p>
                   </div>
 
                   {/* Card 2: Efectivo Generado */}
