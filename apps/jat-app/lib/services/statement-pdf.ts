@@ -225,12 +225,10 @@ export async function getPendingStatementData(
           ? driverObj[0]?.movil_number
           : driverObj?.movil_number;
 
-        const dateFormatted = new Date(r.created_at).toLocaleString('es-BO', {
+        const dateFormatted = new Date(r.created_at).toLocaleDateString('es-BO', {
           day: '2-digit',
           month: '2-digit',
           year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
         });
 
         tickets.push({
@@ -242,7 +240,7 @@ export async function getPendingStatementData(
           origin,
           destination,
           route,
-          movil_number: movil ? `Móvil ${movil}` : '—',
+          movil_number: movil ? `${movil}` : '—',
           total_fare: fare,
           amount_applied: applied,
           pending_amount: pending,
@@ -408,27 +406,27 @@ export function generateCorporateStatementPDF(payload: CorporateStatementPayload
   doc.setTextColor(255, 255, 255);
   doc.text(`${payload.summary.total_pending_tickets}`, marginX + 4, 80);
 
-  // Card 2: Total Cargos
+  // Card 2: Total Servicios
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(148, 163, 184);
-  doc.text('TOTAL CARGOS', marginX + colW + 4, 71);
+  doc.text('TOTAL SERVICIOS', marginX + colW + 4, 71);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  doc.text(`Bs. ${payload.summary.total_charges.toFixed(2)}`, marginX + colW + 4, 80);
+  doc.text(`Bs. ${payload.summary.subtotal_base.toFixed(2)}`, marginX + colW + 4, 80);
 
-  // Card 3: Total Aplicado
+  // Card 3: Impuesto
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(148, 163, 184);
-  doc.text('PAGOS APLICADOS', marginX + colW * 2 + 4, 71);
-  doc.setFontSize(10);
+  doc.text('IMPUESTO', marginX + colW * 2 + 4, 71);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(16, 185, 129);
-  doc.text(`Bs. ${payload.summary.total_applied.toFixed(2)}`, marginX + colW * 2 + 4, 80);
+  doc.setTextColor(255, 255, 255);
+  doc.text(`Bs. ${payload.summary.tax_amount.toFixed(2)}`, marginX + colW * 2 + 4, 80);
 
-  // Card 4: Saldo Pendiente
+  // Card 4: Saldo Pendiente (Total Cargos: Base + Impuesto)
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(253, 222, 18);
@@ -436,7 +434,7 @@ export function generateCorporateStatementPDF(payload: CorporateStatementPayload
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(253, 222, 18);
-  doc.text(`Bs. ${payload.summary.total_pending.toFixed(2)}`, marginX + colW * 3 + 4, 80);
+  doc.text(`Bs. ${payload.summary.total_charges.toFixed(2)}`, marginX + colW * 3 + 4, 80);
 
   // Card 5 (Optional): Saldo a favor
   if (payload.summary.overpayment_credit > 0) {
@@ -594,12 +592,6 @@ export function generateCorporateStatementPDF(payload: CorporateStatementPayload
 
   // Signature and Administrative Footer Section
   const signatureY = summaryBoxY + boxHeight + 15;
-
-  // Left Side: Generation Date
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-  doc.text(`Fecha de generación: ${payload.generation_date}`, marginX, signatureY + 12);
 
   // Right Side: Formal Signature Line for Fabiana Pérez
   const sigBoxWidth = 70;
