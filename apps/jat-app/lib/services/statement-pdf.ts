@@ -608,7 +608,7 @@ export function generateCorporateStatementPDF(payload: CorporateStatementPayload
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-  doc.text('Cobranzas y Administración', sigX + (sigBoxWidth / 2), signatureY + 21, { align: 'center' });
+  doc.text('Gerente', sigX + (sigBoxWidth / 2), signatureY + 21, { align: 'center' });
   doc.text('MOTOSERVI JUSTO A TIEMPO S.R.L.', sigX + (sigBoxWidth / 2), signatureY + 25, { align: 'center' });
 
   // Generate output

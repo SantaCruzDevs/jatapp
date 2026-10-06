@@ -114,32 +114,39 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Server-Side movil_number Uniqueness Check
-      const { data: existingMovil } = await supabaseAdmin
-        .from('drivers')
-        .select('id, movil_number')
-        .eq('movil_number', Number(movil_number))
-        .maybeSingle();
+      // Server-Side movil_number Uniqueness Check against ACTIVE drivers (status != 'baja')
+      if (movil_number) {
+        const { data: existingMovil } = await supabaseAdmin
+          .from('drivers')
+          .select('id, movil_number')
+          .eq('movil_number', Number(movil_number))
+          .neq('status', 'baja')
+          .maybeSingle();
 
-      if (existingMovil) {
-        return NextResponse.json(
-          { error: `El número de móvil #${movil_number} ya está registrado en la flota por otro conductor.` },
-          { status: 400 }
-        );
+        if (existingMovil) {
+          return NextResponse.json(
+            { error: `El número de móvil #${movil_number} ya está registrado en la flota por otro conductor activo.` },
+            { status: 400 }
+          );
+        }
       }
 
       // Insert new public.drivers row
+      const driverPayloadToInsert: any = {
+        profile_id,
+        vehicle_type: vehicle_type.trim(),
+        vehicle_plate: vehicle_plate.trim().toUpperCase(),
+        zone: zone.trim(),
+        rating: 5.00,
+        status: 'available',
+      };
+      if (movil_number) {
+        driverPayloadToInsert.movil_number = Number(movil_number);
+      }
+
       const { data: newDriverRecord, error: insertDriverErr } = await supabaseAdmin
         .from('drivers')
-        .insert([{
-          profile_id,
-          movil_number: Number(movil_number),
-          vehicle_type: vehicle_type.trim(),
-          vehicle_plate: vehicle_plate.trim().toUpperCase(),
-          zone: zone.trim(),
-          rating: 5.00,
-          status: 'available',
-        }])
+        .insert([driverPayloadToInsert])
         .select()
         .single();
 
@@ -222,25 +229,28 @@ export async function POST(request: NextRequest) {
 
     // Server-Side Driver Fields Pre-Validation (if targetRole === 'DRIVER')
     if (targetRole === 'DRIVER') {
-      if (!movil_number || !vehicle_type || !vehicle_plate || !zone) {
+      if (!vehicle_type || !vehicle_plate || !zone) {
         return NextResponse.json(
-          { error: 'Para registrar un Motoquero, los campos (Móvil, Tipo de Vehículo, Placa, Zona) son obligatorios.' },
+          { error: 'Para registrar un Motoquero, los campos (Tipo de Vehículo, Placa, Zona) son obligatorios.' },
           { status: 400 }
         );
       }
 
-      // Check if movil_number already exists BEFORE creating auth user
-      const { data: existingMovil } = await supabaseAdmin
-        .from('drivers')
-        .select('id, movil_number')
-        .eq('movil_number', Number(movil_number))
-        .maybeSingle();
+      // Check if movil_number already exists among ACTIVE drivers (status != 'baja') if specified
+      if (movil_number) {
+        const { data: existingMovil } = await supabaseAdmin
+          .from('drivers')
+          .select('id, movil_number')
+          .eq('movil_number', Number(movil_number))
+          .neq('status', 'baja')
+          .maybeSingle();
 
-      if (existingMovil) {
-        return NextResponse.json(
-          { error: `El número de móvil #${movil_number} ya está registrado en la flota.` },
-          { status: 400 }
-        );
+        if (existingMovil) {
+          return NextResponse.json(
+            { error: `El número de móvil #${movil_number} ya está asignado a otro conductor activo.` },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -291,17 +301,21 @@ export async function POST(request: NextRequest) {
     // 3. If targetRole === 'DRIVER', insert public.drivers record with rollback protection
     let createdDriverData = null;
     if (targetRole === 'DRIVER') {
+      const driverPayloadToInsert: any = {
+        profile_id: newUserId,
+        vehicle_type: vehicle_type!.trim(),
+        vehicle_plate: vehicle_plate!.trim().toUpperCase(),
+        zone: zone!.trim(),
+        rating: 5.00,
+        status: 'available',
+      };
+      if (movil_number) {
+        driverPayloadToInsert.movil_number = Number(movil_number);
+      }
+
       const { data: driverData, error: createDriverErr } = await supabaseAdmin
         .from('drivers')
-        .insert([{
-          profile_id: newUserId,
-          movil_number: Number(movil_number),
-          vehicle_type: vehicle_type!.trim(),
-          vehicle_plate: vehicle_plate!.trim().toUpperCase(),
-          zone: zone!.trim(),
-          rating: 5.00,
-          status: 'available',
-        }])
+        .insert([driverPayloadToInsert])
         .select()
         .single();
 

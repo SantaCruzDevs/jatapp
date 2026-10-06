@@ -1,5 +1,5 @@
 export type UserRole = 'SUPERADMIN' | 'ADMIN' | 'SUPERVISOR' | 'OPERATOR' | 'DRIVER' | 'CLIENT_USER';
-export type DriverStatus = 'available' | 'busy' | 'offline';
+export type DriverStatus = 'available' | 'busy' | 'offline' | 'baja';
 export type RideStatus = 'pending' | 'assigned' | 'ontheway' | 'completed' | 'cancelled';
 export type RidePriority = 'low' | 'medium' | 'high' | 'urgent';
 export type PaymentMethod = 'Efectivo' | 'QR' | 'Ticket';

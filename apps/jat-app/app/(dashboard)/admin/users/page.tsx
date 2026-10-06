@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Topbar from '@/components/layout/Topbar';
 import { getProfiles, updateProfile, updateProfileRole, createUser, completeDriverProfile, formatProfileError, ProfileWithDriver } from '@/lib/services/users';
+import { getNextAvailableMovilNumber } from '@/lib/services/drivers';
 import { uploadAvatar, deleteAvatar, validateAvatarFile } from '@/lib/services/storage';
 import { createClient } from '@/lib/supabase/client';
 import { UserRole } from '@/types/database.types';
@@ -70,6 +71,14 @@ export default function UsersAdminPage() {
   const [createZone, setCreateZone] = useState<string>('');
 
   const [creating, setCreating] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (isCreateModalOpen && createRole === 'DRIVER') {
+      getNextAvailableMovilNumber().then((movil) => {
+        setCreateMovilNumber(String(movil));
+      }).catch((err) => console.warn('Error fetching next movil:', err));
+    }
+  }, [isCreateModalOpen, createRole]);
 
   // Modal complete existing driver profile state
   const [isCompleteDriverModalOpen, setIsCompleteDriverModalOpen] = useState<boolean>(false);
@@ -782,17 +791,20 @@ export default function UsersAdminPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                        Número de Móvil *
+                        Número de Móvil (Asignación Automática) *
                       </label>
-                      <input
-                        type="number"
-                        required
-                        min="1"
-                        placeholder="Ej. 101"
-                        value={createMovilNumber}
-                        onChange={(e) => setCreateMovilNumber(e.target.value)}
-                        className="w-full bg-[#1E293B] border border-[#334155] text-slate-100 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-[#FDDE12]"
-                      />
+                      <div className="relative">
+                        <input
+                          type="text"
+                          readOnly
+                          value={createMovilNumber ? `Móvil #${createMovilNumber}` : 'Calculando menor número disponible...'}
+                          className="w-full bg-[#0F172A] border border-[#334155] text-[#FDDE12] font-bold text-xs rounded-lg px-3 py-2 cursor-not-allowed"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/60 font-semibold">
+                          Automático
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1">El menor número entero libre será reservado atómicamente por el sistema.</p>
                     </div>
 
                     <div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Topbar from '@/components/layout/Topbar';
-import { getDrivers, updateDriverStatus, DriverWithProfile } from '@/lib/services/drivers';
+import { getDrivers, updateDriverStatus, deactivateDriver, DriverWithProfile } from '@/lib/services/drivers';
 import {
   getDriverPreSettlementCandidateSummary,
   createDriverSettlementAtomic,
@@ -52,7 +52,8 @@ import {
   HelpCircle,
   ArrowDownRight,
   Sparkles,
-  AlertTriangle
+  AlertTriangle,
+  UserX
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -119,6 +120,31 @@ export default function DriversModulePage() {
   const [detailItems, setDetailItems] = useState<DriverSettlementItem[]>([]);
   const [loadingDetailItems, setLoadingDetailItems] = useState(false);
 
+  // Deactivation (Dar de baja) Modal State
+  const [selectedDriverForBaja, setSelectedDriverForBaja] = useState<DriverWithProfile | null>(null);
+  const [deactivatingDriver, setDeactivatingDriver] = useState<boolean>(false);
+  const [bajaErrorMsg, setBajaErrorMsg] = useState<string | null>(null);
+
+  const handleDeactivateDriverConfirm = async () => {
+    if (!selectedDriverForBaja) return;
+    setDeactivatingDriver(true);
+    setBajaErrorMsg(null);
+    try {
+      const { error } = await deactivateDriver(selectedDriverForBaja.id);
+      if (error) {
+        setBajaErrorMsg(error.message);
+        return;
+      }
+      setSuccessMsg(`El motoquero Móvil #${selectedDriverForBaja.movil_number} (${selectedDriverForBaja.profile?.full_name || 'Motoquero'}) fue dado de baja exitosamente. El Móvil #${selectedDriverForBaja.movil_number} queda libre para reutilización.`);
+      setSelectedDriverForBaja(null);
+      loadInitialData();
+    } catch (err: any) {
+      setBajaErrorMsg(err.message || 'Error al dar de baja al motoquero.');
+    } finally {
+      setDeactivatingDriver(false);
+    }
+  };
+
   // Load Drivers & User Role
   useEffect(() => {
     getCurrentUserProfileClient().then((profile) => {
@@ -131,7 +157,7 @@ export default function DriversModulePage() {
     setErrorMsg(null);
     try {
       const [driversRes, settlementsRes, sysSettings] = await Promise.all([
-        getDrivers(),
+        getDrivers(undefined, true),
         getDriverSettlements(),
         getSystemSettings(),
       ]);
@@ -543,17 +569,39 @@ export default function DriversModulePage() {
                       {drv.profile?.phone && <p><span className="text-slate-500">Teléfono:</span> <span className="font-mono text-sky-400">{drv.profile.phone}</span></p>}
                     </div>
 
-                    <div className="pt-2 border-t border-[#334155] flex items-center justify-between">
+                    <div className="pt-2 border-t border-[#334155] flex items-center justify-between gap-2">
                       <span className="text-[11px] text-slate-400">Estado Operativo:</span>
-                      <select
-                        value={drv.status}
-                        onChange={(e) => handleStatusChange(drv.id, e.target.value as DriverStatus)}
-                        className="bg-[#1E293B] border border-[#334155] text-white text-xs rounded-lg px-2.5 py-1 focus:outline-none focus:border-[#FDDE12]"
-                      >
-                        <option value="available">🟢 Disponible (Available)</option>
-                        <option value="busy">🟡 En Servicio (Busy)</option>
-                        <option value="offline">⚪ Desconectado (Offline)</option>
-                      </select>
+                      {drv.status === 'baja' ? (
+                        <span className="px-2.5 py-1 bg-rose-950/80 border border-rose-800/60 text-rose-400 text-xs font-bold rounded-lg flex items-center gap-1">
+                          <Ban className="w-3 h-3" />
+                          <span>BAJA (Inactivo)</span>
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={drv.status}
+                            onChange={(e) => handleStatusChange(drv.id, e.target.value as DriverStatus)}
+                            className="bg-[#1E293B] border border-[#334155] text-white text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-[#FDDE12]"
+                          >
+                            <option value="available">🟢 Disponible</option>
+                            <option value="busy">🟡 En Servicio</option>
+                            <option value="offline">⚪ Desconectado</option>
+                          </select>
+                          {['SUPERADMIN', 'ADMIN'].includes(currentUserRole || '') && (
+                            <button
+                              onClick={() => {
+                                setBajaErrorMsg(null);
+                                setSelectedDriverForBaja(drv);
+                              }}
+                              title="Dar de baja a este motoquero"
+                              className="px-2 py-1 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/40 text-rose-300 hover:text-rose-200 text-[11px] font-semibold rounded-lg transition-colors flex items-center gap-1 flex-shrink-0"
+                            >
+                              <UserX className="w-3 h-3" />
+                              <span>Baja</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1444,6 +1492,74 @@ export default function DriversModulePage() {
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium"
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: BAJA DE MOTOQUERO */}
+      {selectedDriverForBaja && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-[#1E293B] border border-rose-800/60 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#334155]">
+              <div className="flex items-center gap-2 text-rose-400 font-bold text-base">
+                <AlertTriangle className="w-5 h-5 text-rose-400" />
+                <span>Confirmar Baja de Motoquero</span>
+              </div>
+              <button
+                onClick={() => setSelectedDriverForBaja(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-300">
+              <p>
+                ¿Está seguro de dar de baja al motoquero <strong className="text-white">{selectedDriverForBaja.profile?.full_name || 'Motoquero'}</strong> (Móvil <strong className="text-[#FDDE12]">#{selectedDriverForBaja.movil_number}</strong>)?
+              </p>
+              <div className="p-3 bg-rose-950/40 border border-rose-800/40 rounded-xl space-y-1.5 text-[11px] text-rose-300">
+                <p className="font-bold flex items-center gap-1.5">
+                  <Ban className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                  Efectos de la Baja en el Sistema:
+                </p>
+                <ul className="list-disc list-inside space-y-1 pl-1 text-slate-300">
+                  <li>El motoquero pasará a estado <strong>BAJA (Inactivo)</strong> y no aparecerá disponible para despacho.</li>
+                  <li>El <strong>Móvil #{selectedDriverForBaja.movil_number}</strong> quedará disponible para reutilización por un nuevo conductor.</li>
+                  <li>Su historial de carreras, liquidaciones y comisiones <strong>permanecerá 100% conservado</strong>.</li>
+                </ul>
+              </div>
+
+              {bajaErrorMsg && (
+                <div className="p-3 bg-rose-950 border border-rose-800 text-rose-200 text-xs rounded-xl font-medium">
+                  {bajaErrorMsg}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#334155]">
+              <button
+                type="button"
+                onClick={() => setSelectedDriverForBaja(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={deactivatingDriver}
+                onClick={handleDeactivateDriverConfirm}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 disabled:opacity-50"
+              >
+                {deactivatingDriver ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Procesando Baja...</span>
+                  </>
+                ) : (
+                  <span>Confirmar Baja</span>
+                )}
               </button>
             </div>
           </div>
