@@ -1,0 +1,21 @@
+-- ====================================================================
+-- MIGRACIÓN CORRECTIVA MÍNIMA: Restablecimiento de GRANT EXECUTE
+-- SOBRE public.get_user_role() PARA EL ROL authenticated
+-- 
+-- Diagnóstico H0.1 / H0.2:
+-- - Causa Raíz: La función get_user_role() es SECURITY DEFINER y es
+--   utilizada internamente por las políticas de Row Level Security (RLS)
+--   en varias tablas (incluyendo rides, driver_settlements,
+--   driver_settlement_items, profiles y storage.objects).
+-- - Al carecer el rol authenticated de permiso EXECUTE sobre get_user_role(),
+--   PostgREST rechaza la evaluación de RLS arrojando un error 42501
+--   (permission denied for function get_user_role) al realizar consultas
+--   de Pre-liquidación / Cierre 80/20.
+-- 
+-- Regla de Mínimo Privilegio:
+-- - Únicamente se otorga EXECUTE al rol authenticated.
+-- - anon PERMANECE SIN ACCESO EXECUTE.
+-- - No se alteran políticas RLS, esquemas DDL ni tablas de datos.
+-- ====================================================================
+
+GRANT EXECUTE ON FUNCTION public.get_user_role() TO authenticated;
