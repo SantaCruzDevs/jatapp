@@ -186,10 +186,10 @@ export default function BackupSettingsTab({ userRole }: BackupSettingsTabProps) 
           <div className="space-y-1">
             <h4 className="text-xs font-bold text-white flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-cyan-400" />
-              Permitir Generación de Backups a Rol ADMIN (`ALLOW_ADMIN_BACKUP`)
+              Permitir Generación de Backups a Rol Administrador (`ALLOW_ADMIN_BACKUP`)
             </h4>
             <p className="text-[11px] text-slate-400">
-              Si está deshabilitado, únicamente el rol SUPERADMIN (&quot;Soporte&quot;) puede consultar y generar backups.
+              Si está deshabilitado, únicamente el rol Soporte puede consultar y generar backups.
             </p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">

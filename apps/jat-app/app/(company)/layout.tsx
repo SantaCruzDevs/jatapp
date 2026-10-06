@@ -53,7 +53,7 @@ export default async function CompanyPortalLayout({
             <div className="bg-[#1E293B] border border-[#334155] rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-xl">
               <h2 className="text-lg font-bold text-white font-heading">Cuenta en Proceso de Vinculación</h2>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Su cuenta de usuario <strong>CLIENT_USER</strong> está activa, pero aún no se ha completado la vinculación formal con su Empresa Corporativa.
+                Su cuenta de usuario <strong>Empresa / Cliente</strong> está activa, pero aún no se ha completado la vinculación formal con su Empresa Corporativa.
               </p>
               <p className="text-[11px] text-slate-400">
                 Por favor póngase en contacto con el equipo de Soporte MotoJAT para habilitar el acceso a su portal.

@@ -87,3 +87,17 @@ export async function updateUserPassword(newPassword: string) {
   }
 }
 
+export const ROLE_LABELS: Record<string, string> = {
+  SUPERADMIN: 'Soporte',
+  ADMIN: 'Administrador',
+  SUPERVISOR: 'Supervisor',
+  OPERATOR: 'Operador',
+  DRIVER: 'Motoquero',
+  CLIENT_USER: 'Empresa / Cliente',
+};
+
+export function getRoleLabel(role?: string | null): string {
+  if (!role) return 'Sistema';
+  return ROLE_LABELS[role.toUpperCase()] || role;
+}
+

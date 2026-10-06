@@ -767,15 +767,15 @@ export default function UsersAdminPage() {
                   onChange={(e) => setCreateRole(e.target.value as UserRole)}
                   className="w-full bg-[#0F172A] border border-[#334155] text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#FDDE12] cursor-pointer font-medium"
                 >
-                  <option value="CLIENT_USER">Empresa / Cliente (CLIENT_USER)</option>
-                  <option value="DRIVER">Motoquero (DRIVER)</option>
-                  <option value="OPERATOR">Operador (OPERATOR)</option>
+                  <option value="CLIENT_USER">Empresa / Cliente</option>
+                  <option value="DRIVER">Motoquero</option>
+                  <option value="OPERATOR">Operador</option>
 
                   {['SUPERADMIN', 'ADMIN'].includes(activeUserRole || '') && (
-                    <option value="SUPERVISOR">Supervisor (SUPERVISOR)</option>
+                    <option value="SUPERVISOR">Supervisor</option>
                   )}
                   {['SUPERADMIN', 'ADMIN'].includes(activeUserRole || '') && (
-                    <option value="ADMIN">Administrador (ADMIN)</option>
+                    <option value="ADMIN">Administrador</option>
                   )}
                 </select>
               </div>
@@ -1095,15 +1095,15 @@ export default function UsersAdminPage() {
                   onChange={(e) => setEditRole(e.target.value as UserRole)}
                   className="w-full bg-[#0F172A] border border-[#334155] text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#FDDE12] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed font-medium"
                 >
-                  <option value="CLIENT_USER">Empresa / Cliente (CLIENT_USER)</option>
-                  <option value="DRIVER">Motoquero (DRIVER)</option>
-                  <option value="OPERATOR">Operador (OPERATOR)</option>
+                  <option value="CLIENT_USER">Empresa / Cliente</option>
+                  <option value="DRIVER">Motoquero</option>
+                  <option value="OPERATOR">Operador</option>
 
                   {['SUPERADMIN', 'ADMIN'].includes(activeUserRole || '') && (
-                    <option value="SUPERVISOR">Supervisor (SUPERVISOR)</option>
+                    <option value="SUPERVISOR">Supervisor</option>
                   )}
                   {['SUPERADMIN', 'ADMIN'].includes(activeUserRole || '') && (
-                    <option value="ADMIN">Administrador (ADMIN)</option>
+                    <option value="ADMIN">Administrador</option>
                   )}
                   {editingProfile?.role === 'SUPERADMIN' && (
                     <option value="SUPERADMIN" disabled>Soporte (Lectura únicamente)</option>
@@ -1116,9 +1116,9 @@ export default function UsersAdminPage() {
                       {editingProfile.id === activeUserId
                         ? 'No puedes modificar tu propio rol por seguridad.'
                         : editingProfile.role === 'SUPERADMIN'
-                        ? 'El rol Soporte (SUPERADMIN) es inmutable y protegido por RLS.'
+                        ? 'El rol Soporte es inmutable y protegido por el sistema.'
                         : editingProfile.role === 'ADMIN' && activeUserRole !== 'SUPERADMIN'
-                        ? 'Solo un usuario Soporte (SUPERADMIN) puede modificar el rol de un Administrador.'
+                        ? 'Solo un usuario Soporte puede modificar el rol de un Administrador.'
                         : 'No tienes permisos suficientes para cambiar el rol de este usuario.'}
                     </span>
                   </p>

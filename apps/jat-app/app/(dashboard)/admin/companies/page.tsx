@@ -683,7 +683,7 @@ export default function CompaniesAdminPage() {
             {/* Form to Link User */}
             <form onSubmit={handleLinkUser} className="bg-[#0F172A] p-4 rounded-xl border border-[#334155] space-y-3">
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                Vincular Nuevo Usuario Cliente (&quot;CLIENT_USER&quot;)
+                Vincular Nuevo Usuario (Empresa / Cliente)
               </label>
               <div className="flex items-center gap-3">
                 <select
