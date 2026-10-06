@@ -137,11 +137,14 @@ export async function createRide(params: {
   const { data: authData } = await supabase.auth.getUser();
   const userId = authData.user?.id || null;
 
-  // Generate unique ride code, e.g. JAT-849201
-  const rideCode = `JAT-${Math.floor(100000 + Math.random() * 900000)}`;
+  // Fetch official atomic server-side ride code from PostgreSQL (JAT-YYMM-NNNNNN)
+  const { data: serverRideCode, error: rpcError } = await supabase.rpc('generate_next_ride_code');
+  if (rpcError) {
+    console.error('Error generating official ride code from PostgreSQL:', rpcError);
+  }
 
   const ridePayload = {
-    ride_code: rideCode,
+    ride_code: serverRideCode || undefined,
     customer_id: params.customer_id || null,
     company_id: params.company_id || null,
     requester_company: params.requester_company.trim() || 'Particular',
@@ -178,7 +181,7 @@ export async function createRide(params: {
     status_from: null,
     status_to: 'pending',
     event_title: 'Carrera Creada',
-    event_description: `Solicitud ${rideCode} registrada para ${params.requester_person} (${params.requester_company})`,
+    event_description: `Solicitud ${newRide.ride_code} registrada para ${params.requester_person} (${params.requester_company})`,
     actor_id: userId,
   });
 

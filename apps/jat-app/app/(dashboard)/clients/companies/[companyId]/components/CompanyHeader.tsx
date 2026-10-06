@@ -11,6 +11,7 @@ import {
   Phone, 
   IdCard, 
   FileText, 
+  Edit3,
   Plus, 
   Bike, 
   CreditCard,
@@ -23,6 +24,7 @@ interface CompanyHeaderProps {
   primaryContact?: CustomerWithCompany | null;
   portalEnabled?: boolean;
   onOpenAddRequester?: () => void;
+  onOpenEditCompany?: () => void;
 }
 
 export default function CompanyHeader({
@@ -30,6 +32,7 @@ export default function CompanyHeader({
   primaryContact,
   portalEnabled = false,
   onOpenAddRequester,
+  onOpenEditCompany,
 }: CompanyHeaderProps) {
   const getStatusBadge = (status: Company['status']) => {
     if (status === 'active') {
@@ -94,6 +97,17 @@ export default function CompanyHeader({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
+          {onOpenEditCompany && (
+            <button
+              onClick={onOpenEditCompany}
+              className="px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+              title="Editar datos generales y tributarios de la empresa"
+            >
+              <Edit3 className="w-4 h-4 text-sky-400" />
+              <span>Editar Empresa</span>
+            </button>
+          )}
+
           {onOpenAddRequester && (
             <button
               onClick={onOpenAddRequester}

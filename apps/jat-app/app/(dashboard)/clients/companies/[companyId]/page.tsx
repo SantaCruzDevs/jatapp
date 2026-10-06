@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+import { EditCompanyModal } from './components/EditCompanyModal';
+
 export type SubTab = 'resumen' | 'solicitantes' | 'contratos' | 'cuenta' | 'carreras';
 
 interface CompanyDetailPageProps {
@@ -40,6 +42,7 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
   const [allCustomers, setAllCustomers] = useState<CustomerWithCompany[]>([]);
   const [portalEnabled, setPortalEnabled] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<SubTab>('resumen');
+  const [isEditCompanyModalOpen, setIsEditCompanyModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -125,6 +128,7 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
               primaryContact={primaryContact}
               portalEnabled={portalEnabled}
               onOpenAddRequester={() => setActiveTab('solicitantes')}
+              onOpenEditCompany={() => setIsEditCompanyModalOpen(true)}
             />
 
             {/* Navigation Tabs Bar */}
@@ -229,6 +233,19 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
               )}
             </div>
           </div>
+        )}
+
+        {/* Edit Company Modal */}
+        {company && (
+          <EditCompanyModal
+            company={company}
+            isOpen={isEditCompanyModalOpen}
+            onClose={() => setIsEditCompanyModalOpen(false)}
+            onSuccess={(updated) => {
+              setCompany(updated);
+              loadCompanyData();
+            }}
+          />
         )}
       </main>
     </div>

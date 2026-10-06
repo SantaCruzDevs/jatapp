@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { createClient } from '@/lib/supabase/client';
+import { calculateTaxSurcharge } from './company-account';
+import { CompanyTaxMode } from '@/types/database.types';
 
 export interface StatementTicketItem {
   ride_id: string;
@@ -19,6 +21,10 @@ export interface StatementTicketItem {
 
 export interface StatementSummaryData {
   total_pending_tickets: number;
+  subtotal_base: number;
+  tax_mode: string;
+  tax_rate_label: string;
+  tax_amount: number;
   total_charges: number;
   total_applied: number;
   total_pending: number;
@@ -55,7 +61,7 @@ export async function getPendingStatementData(
     // 1. Fetch company details
     const { data: company, error: compErr } = await supabase
       .from('companies')
-      .select('id, business_name, nit')
+      .select('id, business_name, nit, tax_mode')
       .eq('id', companyId)
       .single();
 
@@ -107,6 +113,7 @@ export async function getPendingStatementData(
       // Check overpayment credit balance
       const overpaymentCredit = await fetchOverpaymentCredit(supabase, companyId);
 
+      const emptyTax = calculateTaxSurcharge(0, (company.tax_mode as CompanyTaxMode) || 'SIN_FACTURA');
       return {
         payload: {
           company: {
@@ -116,6 +123,10 @@ export async function getPendingStatementData(
           },
           summary: {
             total_pending_tickets: 0,
+            subtotal_base: 0,
+            tax_mode: emptyTax.tax_mode,
+            tax_rate_label: emptyTax.tax_rate_label,
+            tax_amount: 0,
             total_charges: 0,
             total_applied: 0,
             total_pending: 0,
@@ -141,6 +152,7 @@ export async function getPendingStatementData(
 
     if (eligibleRides.length === 0) {
       const overpaymentCredit = await fetchOverpaymentCredit(supabase, companyId);
+      const emptyTax = calculateTaxSurcharge(0, (company.tax_mode as CompanyTaxMode) || 'SIN_FACTURA');
       return {
         payload: {
           company: {
@@ -150,6 +162,10 @@ export async function getPendingStatementData(
           },
           summary: {
             total_pending_tickets: 0,
+            subtotal_base: 0,
+            tax_mode: emptyTax.tax_mode,
+            tax_rate_label: emptyTax.tax_rate_label,
+            tax_amount: 0,
             total_charges: 0,
             total_applied: 0,
             total_pending: 0,
@@ -239,6 +255,10 @@ export async function getPendingStatementData(
     }
 
     const overpaymentCredit = await fetchOverpaymentCredit(supabase, companyId);
+    const subtotalBase = totalCharges;
+    const taxBreakdown = calculateTaxSurcharge(subtotalBase, (company.tax_mode as CompanyTaxMode) || 'SIN_FACTURA');
+    const finalTotalCharges = taxBreakdown.total_with_tax;
+    const finalTotalPending = Math.max(0, finalTotalCharges - totalApplied);
 
     return {
       payload: {
@@ -249,9 +269,13 @@ export async function getPendingStatementData(
         },
         summary: {
           total_pending_tickets: tickets.length,
-          total_charges: totalCharges,
+          subtotal_base: subtotalBase,
+          tax_mode: taxBreakdown.tax_mode,
+          tax_rate_label: taxBreakdown.tax_rate_label,
+          tax_amount: taxBreakdown.tax_amount,
+          total_charges: finalTotalCharges,
           total_applied: totalApplied,
-          total_pending: totalPending,
+          total_pending: finalTotalPending,
           overpayment_credit: overpaymentCredit,
         },
         tickets,
@@ -416,21 +440,18 @@ export function generateCorporateStatementPDF(payload: CorporateStatementPayload
     doc.text(`Bs. ${payload.summary.overpayment_credit.toFixed(2)}`, 14 + colW * 4 + 4, 80);
   }
 
-  // Table Data Preparation
+  // Table Data Preparation: Fecha, Nº Ticket, Nº Móvil, Origen, Destino, Monto
   const tableHead = [
-    ['Fecha', 'Ticket', 'Carrera', 'Solicitante', 'Ruta (Origen → Destino)', 'Móvil', 'Importe', 'Aplicado', 'Pendiente'],
+    ['Fecha', 'Nº Ticket', 'Nº Móvil', 'Origen', 'Destino', 'Monto'],
   ];
 
   const tableBody = payload.tickets.map((t) => [
     t.date_formatted,
     t.ticket_code,
-    t.ride_code,
-    t.requester_person,
-    t.route,
     t.movil_number,
+    t.origin,
+    t.destination,
     `Bs. ${t.total_fare.toFixed(2)}`,
-    `Bs. ${t.amount_applied.toFixed(2)}`,
-    `Bs. ${t.pending_amount.toFixed(2)}`,
   ]);
 
   if (tableBody.length === 0) {
@@ -440,16 +461,13 @@ export function generateCorporateStatementPDF(payload: CorporateStatementPayload
       '—',
       'No existen tickets pendientes de pago a la fecha.',
       '—',
-      '—',
-      'Bs. 0.00',
-      'Bs. 0.00',
       'Bs. 0.00',
     ]);
   }
 
   // AutoTable configuration
   autoTable(doc, {
-    startY: 92,
+    startY: 90,
     head: tableHead,
     body: tableBody,
     theme: 'grid',
@@ -466,15 +484,12 @@ export function generateCorporateStatementPDF(payload: CorporateStatementPayload
       cellPadding: 2.5,
     },
     columnStyles: {
-      0: { cellWidth: 24 }, // Fecha
-      1: { cellWidth: 20, fontStyle: 'bold' }, // Ticket
-      2: { cellWidth: 18 }, // Carrera
-      3: { cellWidth: 24 }, // Solicitante
-      4: { cellWidth: 42 }, // Ruta
-      5: { cellWidth: 15 }, // Móvil
-      6: { cellWidth: 13, halign: 'right' }, // Importe
-      7: { cellWidth: 13, halign: 'right' }, // Aplicado
-      8: { cellWidth: 13, halign: 'right', fontStyle: 'bold', textColor: [225, 29, 72] }, // Pendiente
+      0: { cellWidth: 26 }, // Fecha
+      1: { cellWidth: 30, fontStyle: 'bold' }, // Nº Ticket
+      2: { cellWidth: 18 }, // Nº Móvil
+      3: { cellWidth: 46 }, // Origen
+      4: { cellWidth: 46 }, // Destino
+      5: { cellWidth: 16, halign: 'right', fontStyle: 'bold' }, // Monto
     },
     styles: {
       overflow: 'linebreak',
@@ -505,8 +520,55 @@ export function generateCorporateStatementPDF(payload: CorporateStatementPayload
     },
   });
 
-  // Final Summary & Conciliation Note
+  // Final Financial Summary Box matching MotoJAT Commercial Standard
   const finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 150;
+  if (finalY < 235) {
+    const summaryBoxX = 112;
+    const summaryBoxY = finalY + 6;
+    const hasTax = payload.summary.tax_mode && payload.summary.tax_mode !== 'SIN_FACTURA';
+    const boxHeight = hasTax ? (payload.summary.total_applied > 0 ? 36 : 30) : (payload.summary.total_applied > 0 ? 30 : 24);
+
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(summaryBoxX, summaryBoxY, 84, boxHeight, 2, 2, 'FD');
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+
+    let currY = summaryBoxY + 5.5;
+    doc.text('TOTAL SERVICIOS:', summaryBoxX + 4, currY);
+    doc.text(`Bs. ${payload.summary.subtotal_base.toFixed(2)}`, summaryBoxX + 80, currY, { align: 'right' });
+
+    if (payload.summary.tax_mode === 'IVA_13') {
+      currY += 5.5;
+      doc.text('IVA (13%):', summaryBoxX + 4, currY);
+      doc.text(`Bs. ${payload.summary.tax_amount.toFixed(2)}`, summaryBoxX + 80, currY, { align: 'right' });
+    } else if (payload.summary.tax_mode === 'EFECTIVA_14_94') {
+      currY += 5.5;
+      doc.text('IMPUESTO EFECTIVO (14.94%):', summaryBoxX + 4, currY);
+      doc.text(`Bs. ${payload.summary.tax_amount.toFixed(2)}`, summaryBoxX + 80, currY, { align: 'right' });
+    }
+
+    currY += 5.5;
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL:', summaryBoxX + 4, currY);
+    doc.text(`Bs. ${payload.summary.total_charges.toFixed(2)}`, summaryBoxX + 80, currY, { align: 'right' });
+
+    if (payload.summary.total_applied > 0) {
+      currY += 5.5;
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(16, 185, 129); // Emerald
+      doc.text('PAGOS APLICADOS (-):', summaryBoxX + 4, currY);
+      doc.text(`Bs. ${payload.summary.total_applied.toFixed(2)}`, summaryBoxX + 80, currY, { align: 'right' });
+    }
+
+    currY += 5.5;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(225, 29, 72); // Rose
+    doc.text('SALDO PENDIENTE:', summaryBoxX + 4, currY);
+    doc.text(`Bs. ${payload.summary.total_pending.toFixed(2)}`, summaryBoxX + 80, currY, { align: 'right' });
+  }
   if (finalY < 250) {
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');

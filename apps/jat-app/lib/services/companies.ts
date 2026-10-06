@@ -1,5 +1,5 @@
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
-import { Company, CompanyUser, Profile } from '@/types/database.types';
+import { Company, CompanyTaxMode, CompanyUser, Profile } from '@/types/database.types';
 
 export async function getCompanies(search?: string): Promise<Company[]> {
   const supabase = createBrowserClient();
@@ -26,6 +26,7 @@ export async function createCompany(payload: {
   phone?: string | null;
   email?: string | null;
   address?: string | null;
+  tax_mode?: CompanyTaxMode;
 }): Promise<Company> {
   const supabase = createBrowserClient();
   const { data, error } = await supabase
@@ -37,6 +38,7 @@ export async function createCompany(payload: {
       phone: payload.phone?.trim() || null,
       email: payload.email?.trim() || null,
       address: payload.address?.trim() || null,
+      tax_mode: payload.tax_mode || 'SIN_FACTURA',
       status: 'active',
     })
     .select()
@@ -61,6 +63,7 @@ export async function updateCompany(
     address?: string | null;
     primary_contact_customer_id?: string | null;
     status?: 'active' | 'inactive' | 'suspended';
+    tax_mode?: CompanyTaxMode;
   }
 ): Promise<Company> {
   const supabase = createBrowserClient();
@@ -76,6 +79,7 @@ export async function updateCompany(
   if (payload.address !== undefined) updateData.address = payload.address?.trim() || null;
   if (payload.primary_contact_customer_id !== undefined) updateData.primary_contact_customer_id = payload.primary_contact_customer_id || null;
   if (payload.status !== undefined) updateData.status = payload.status;
+  if (payload.tax_mode !== undefined) updateData.tax_mode = payload.tax_mode;
 
   const { data, error } = await supabase
     .from('companies')

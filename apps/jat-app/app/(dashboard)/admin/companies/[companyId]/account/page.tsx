@@ -27,10 +27,13 @@ import {
   Download,
   Eye,
   FileText,
+  Edit3,
   Send
 } from 'lucide-react';
 import Link from 'next/link';
 import { StatementPdfModal } from '@/app/(dashboard)/clients/companies/[companyId]/components/StatementPdfModal';
+import { SelectedTicketDetailModal } from '@/app/(dashboard)/clients/companies/[companyId]/components/SelectedTicketDetailModal';
+import { EditCompanyModal } from '@/app/(dashboard)/clients/companies/[companyId]/components/EditCompanyModal';
 import { getPaymentLiquidationData, generatePaymentLiquidationPDF } from '@/lib/services/liquidation-pdf';
 import { createClient } from '@/lib/supabase/client';
 
@@ -60,7 +63,9 @@ export default function AdminCompanyAccountPage({ params }: AdminCompanyAccountP
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
   const [isStatementPdfModalOpen, setIsStatementPdfModalOpen] = useState(false);
+  const [isEditCompanyModalOpen, setIsEditCompanyModalOpen] = useState(false);
   const [selectedPaymentForDetail, setSelectedPaymentForDetail] = useState<CompanyMovement | null>(null);
+  const [selectedTicketForModal, setSelectedTicketForModal] = useState<{ rideId?: string; rideCode?: string; ticketCode?: string } | null>(null);
   const [allocatedRides, setAllocatedRides] = useState<AllocatedRideItem[]>([]);
   const [loadingAllocations, setLoadingAllocations] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -395,6 +400,15 @@ export default function AdminCompanyAccountPage({ params }: AdminCompanyAccountP
             </select>
 
             <button
+              onClick={() => setIsEditCompanyModalOpen(true)}
+              className="px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+              title="Editar datos generales y tributarios de la empresa"
+            >
+              <Edit3 className="w-4 h-4 text-sky-400" />
+              <span>Editar Empresa</span>
+            </button>
+
+            <button
               onClick={handleOpenPaymentModal}
               className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-[#0F172A] font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md"
             >
@@ -465,9 +479,19 @@ export default function AdminCompanyAccountPage({ params }: AdminCompanyAccountP
                   Bs. {summary.pending_balance.toFixed(2)}
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">Saldo actual de la cuenta corporativa</p>
+                {summary.tax_breakdown && summary.tax_breakdown.tax_mode !== 'SIN_FACTURA' && (
+                  <div className="mt-2 pt-2 border-t border-[#334155]/80 flex flex-wrap items-center gap-4 text-xs font-mono">
+                    <span className="text-slate-400">Subtotal Servicios: <strong className="text-white">Bs. {summary.subtotal_base.toFixed(2)}</strong></span>
+                    <span className="text-amber-400 font-semibold">{summary.tax_breakdown.tax_rate_label}: <strong>+ Bs. {summary.tax_breakdown.tax_amount.toFixed(2)}</strong></span>
+                    <span className="text-slate-300">Total Cargos: <strong>Bs. {summary.total_charges.toFixed(2)}</strong></span>
+                  </div>
+                )}
               </div>
 
               <div className="text-right text-xs text-slate-400 border-l border-slate-700 pl-4 py-1 hidden sm:block font-mono space-y-1">
+                {summary.tax_breakdown && summary.tax_breakdown.tax_mode !== 'SIN_FACTURA' && (
+                  <p>Subtotal Base: <span className="text-slate-300">Bs. {summary.subtotal_base.toFixed(2)}</span></p>
+                )}
                 <p>Consumos Totales: <span className="text-slate-200">Bs. {summary.total_charges.toFixed(2)}</span></p>
                 <p>Pagos Recibidos: <span className="text-emerald-400">Bs. {summary.total_payments.toFixed(2)}</span></p>
                 <p>Ajustes Aplicados: <span className="text-purple-300">Bs. {summary.total_adjustments.toFixed(2)}</span></p>
@@ -845,14 +869,14 @@ export default function AdminCompanyAccountPage({ params }: AdminCompanyAccountP
                       {allocatedRides.map((item) => (
                         <tr key={item.id} className="hover:bg-[#334155]/30">
                           <td className="py-2.5 px-3">
-                            <Link
-                              href={`/t/${item.ride.ride_code}`}
-                              target="_blank"
-                              className="font-mono font-bold text-[#FDDE12] hover:underline hover:text-yellow-300 block text-xs"
-                              title="Ver detalle digital de la carrera"
+                            <button
+                              type="button"
+                              onClick={() => setSelectedTicketForModal({ rideId: item.ride.id, rideCode: item.ride.ride_code, ticketCode: item.ride.ticket_code })}
+                              className="font-mono font-bold text-[#FDDE12] hover:underline hover:text-yellow-300 block text-xs text-left"
+                              title="Ver detalle completo del ticket corporativo"
                             >
                               {item.ride.ticket_code}
-                            </Link>
+                            </button>
                             <span className="text-[10px] text-slate-400 font-mono">Carrera: {item.ride.ride_code}</span>
                           </td>
 
@@ -956,6 +980,27 @@ export default function AdminCompanyAccountPage({ params }: AdminCompanyAccountP
         isOpen={isStatementPdfModalOpen}
         onClose={() => setIsStatementPdfModalOpen(false)}
       />
+
+      {/* Selected Ticket Detail Modal */}
+      <SelectedTicketDetailModal
+        rideId={selectedTicketForModal?.rideId}
+        rideCode={selectedTicketForModal?.rideCode}
+        ticketCode={selectedTicketForModal?.ticketCode}
+        isOpen={!!selectedTicketForModal}
+        onClose={() => setSelectedTicketForModal(null)}
+      />
+
+      {/* Edit Company Modal */}
+      {summary?.company && (
+        <EditCompanyModal
+          company={summary.company}
+          isOpen={isEditCompanyModalOpen}
+          onClose={() => setIsEditCompanyModalOpen(false)}
+          onSuccess={() => {
+            loadAccountData();
+          }}
+        />
+      )}
     </div>
   );
 }

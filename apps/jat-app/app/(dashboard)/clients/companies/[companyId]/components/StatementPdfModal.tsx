@@ -249,10 +249,15 @@ export function StatementPdfModal({
           </div>
 
           {payload && (
-            <div className="flex items-center gap-4 text-xs font-mono">
+            <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
               <div className="bg-[#0F172A] px-3 py-1.5 rounded-lg border border-[#334155] text-slate-300">
                 Tickets: <strong className="text-white">{payload.summary.total_pending_tickets}</strong>
               </div>
+              {payload.summary.tax_mode && payload.summary.tax_mode !== 'SIN_FACTURA' && (
+                <div className="bg-[#0F172A] px-3 py-1.5 rounded-lg border border-[#334155] text-slate-300">
+                  Subtotal: <strong className="text-slate-200">Bs. {payload.summary.subtotal_base.toFixed(2)}</strong> | {payload.summary.tax_rate_label}: <strong className="text-amber-400">+Bs. {payload.summary.tax_amount.toFixed(2)}</strong>
+                </div>
+              )}
               <div className="bg-[#0F172A] px-3 py-1.5 rounded-lg border border-[#334155] text-slate-300">
                 Pendiente: <strong className="text-[#FDDE12]">Bs. {payload.summary.total_pending.toFixed(2)}</strong>
               </div>

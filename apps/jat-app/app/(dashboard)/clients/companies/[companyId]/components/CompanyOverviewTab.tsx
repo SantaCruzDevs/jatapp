@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Company } from '@/types/database.types';
+import { Company, CompanyTaxMode } from '@/types/database.types';
 import { CustomerWithCompany } from '@/lib/services/customers';
 import { getCompanyAccountSummary, CompanyAccountSummary } from '@/lib/services/company-account';
+import { updateCompany } from '@/lib/services/companies';
 import { 
   Building2, 
   Star, 
@@ -22,6 +23,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+import { EditCompanyModal } from './EditCompanyModal';
+
 interface CompanyOverviewTabProps {
   company: Company;
   primaryContact: CustomerWithCompany | null;
@@ -39,6 +42,15 @@ export default function CompanyOverviewTab({
 }: CompanyOverviewTabProps) {
   const [accountSummary, setAccountSummary] = useState<CompanyAccountSummary | null>(null);
   const [loadingFinancial, setLoadingFinancial] = useState(true);
+  const [currentTaxMode, setCurrentTaxMode] = useState<CompanyTaxMode>(company.tax_mode || 'SIN_FACTURA');
+  const [updatingTaxMode, setUpdatingTaxMode] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentCompany, setCurrentCompany] = useState<Company>(company);
+
+  useEffect(() => {
+    setCurrentCompany(company);
+    setCurrentTaxMode(company.tax_mode || 'SIN_FACTURA');
+  }, [company]);
 
   const loadSummary = useCallback(async () => {
     setLoadingFinancial(true);
@@ -53,8 +65,22 @@ export default function CompanyOverviewTab({
   }, [company.id]);
 
   useEffect(() => {
+    setCurrentTaxMode(company.tax_mode || 'SIN_FACTURA');
     loadSummary();
-  }, [loadSummary]);
+  }, [company.tax_mode, loadSummary]);
+
+  const handleTaxModeChange = async (newMode: CompanyTaxMode) => {
+    setUpdatingTaxMode(true);
+    try {
+      await updateCompany(company.id, { tax_mode: newMode });
+      setCurrentTaxMode(newMode);
+      await loadSummary();
+    } catch (err) {
+      console.error('Error updating tax mode:', err);
+    } finally {
+      setUpdatingTaxMode(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -128,15 +154,25 @@ export default function CompanyOverviewTab({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Block A: General Business Data */}
         <div className="p-5 bg-[#0F172A]/70 border border-[#334155] rounded-xl space-y-3">
-          <h4 className="text-xs font-bold text-white uppercase tracking-wider border-b border-[#334155] pb-2 flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-[#FDDE12]" />
-            <span>DATOS GENERALES DE LA EMPRESA</span>
-          </h4>
+          <div className="flex items-center justify-between border-b border-[#334155] pb-2">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-[#FDDE12]" />
+              <span>DATOS GENERALES DE LA EMPRESA</span>
+            </h4>
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="text-[11px] font-semibold text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1"
+              title="Editar datos de la empresa"
+            >
+              <FileText className="w-3 h-3 text-sky-400" />
+              <span>Editar Empresa</span>
+            </button>
+          </div>
 
           <div className="space-y-2 text-xs">
             <div className="flex justify-between py-1 border-b border-[#334155]/50">
               <span className="text-slate-400">Razón Social:</span>
-              <strong className="text-white font-semibold">{company.business_name}</strong>
+              <strong className="text-white font-semibold">{currentCompany.business_name}</strong>
             </div>
 
             {company.trade_name && (
@@ -149,6 +185,26 @@ export default function CompanyOverviewTab({
             <div className="flex justify-between py-1 border-b border-[#334155]/50">
               <span className="text-slate-400">NIT:</span>
               <strong className="text-slate-200 font-mono">{company.nit || 'Sin NIT registrado'}</strong>
+            </div>
+
+            <div className="flex justify-between items-center py-1.5 border-b border-[#334155]/50">
+              <span className="text-slate-400 flex items-center gap-1">
+                <FileText className="w-3 h-3 text-amber-400" />
+                Tratamiento Tributario:
+              </span>
+              <div className="flex items-center gap-2">
+                {updatingTaxMode && <Loader2 className="w-3 h-3 animate-spin text-amber-400" />}
+                <select
+                  value={currentTaxMode}
+                  disabled={updatingTaxMode}
+                  onChange={(e) => handleTaxModeChange(e.target.value as CompanyTaxMode)}
+                  className="bg-[#0F172A] border border-[#334155] text-amber-300 font-semibold text-[11px] rounded px-2 py-0.5 focus:outline-none focus:border-amber-500"
+                >
+                  <option value="SIN_FACTURA">Sin Factura (0.00%)</option>
+                  <option value="IVA_13">Factura Directa IVA (13.00%)</option>
+                  <option value="EFECTIVA_14_94">Tasa Efectiva Surtasa (14.94%)</option>
+                </select>
+              </div>
             </div>
 
             <div className="flex justify-between py-1 border-b border-[#334155]/50">
@@ -248,6 +304,17 @@ export default function CompanyOverviewTab({
           )}
         </div>
       </div>
+
+      <EditCompanyModal
+        company={currentCompany}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={(updated) => {
+          setCurrentCompany(updated);
+          setCurrentTaxMode(updated.tax_mode || 'SIN_FACTURA');
+          loadSummary();
+        }}
+      />
     </div>
   );
 }

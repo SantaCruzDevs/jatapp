@@ -1,7 +1,40 @@
 import { createClient } from '@/lib/supabase/client';
-import { Company } from '@/types/database.types';
+import { Company, CompanyTaxMode } from '@/types/database.types';
 
 export type MovementType = 'PAGO' | 'AJUSTE' | 'CIERRE';
+
+export interface TaxBreakdown {
+  tax_mode: CompanyTaxMode;
+  tax_rate_label: string;
+  subtotal_base: number;
+  tax_amount: number;
+  total_with_tax: number;
+}
+
+export function calculateTaxSurcharge(baseAmount: number, taxMode: CompanyTaxMode = 'SIN_FACTURA'): TaxBreakdown {
+  const base = Math.round((baseAmount || 0) * 100) / 100;
+  let taxAmount = 0;
+  let taxRateLabel = 'Sin impuesto (0%)';
+
+  if (taxMode === 'IVA_13') {
+    taxRateLabel = 'IVA (13%)';
+    taxAmount = Math.round(base * 0.13 * 100) / 100;
+  } else if (taxMode === 'EFECTIVA_14_94') {
+    taxRateLabel = 'Impuesto (14.94%)';
+    // Direct formula: base * 14.94%
+    taxAmount = Math.round(base * 0.1494 * 100) / 100;
+  }
+
+  const totalWithTax = Math.round((base + taxAmount) * 100) / 100;
+
+  return {
+    tax_mode: taxMode,
+    tax_rate_label: taxRateLabel,
+    subtotal_base: base,
+    tax_amount: taxAmount,
+    total_with_tax: totalWithTax,
+  };
+}
 
 export interface CompanyMovement {
   id: string;
@@ -37,10 +70,12 @@ export interface AllocatedRideItem {
 
 export interface CompanyAccountSummary {
   company: Company;
-  total_charges: number; // Sum of completed Ticket rides
+  subtotal_base: number; // Sum of completed Ticket rides base
+  tax_breakdown: TaxBreakdown;
+  total_charges: number; // Subtotal Base + Tax Amount
   total_payments: number; // Sum of payments
   total_adjustments: number; // Sum of signed adjustments
-  pending_balance: number; // Cargos - Pagos + Ajustes
+  pending_balance: number; // Cargos con Impuesto - Pagos + Ajustes
   cobranza_status: 'PAGADO' | 'PARCIALMENTE_PAGADO' | 'PENDIENTE';
   last_payment_date?: string | null;
   movements_count: number;
@@ -148,8 +183,10 @@ export async function getCompanyAccountSummary(
     }
   });
 
-  // 5. Formula: SALDO = CARGOS - PAGOS + AJUSTES
-  const pendingBalance = Number((totalCharges - totalPayments + totalAdjustments).toFixed(2));
+  // 5. Formula: SALDO = (CARGOS_BASE + ADICIONAL_TRIBUTARIO) - PAGOS + AJUSTES
+  const taxBreakdown = calculateTaxSurcharge(totalCharges, (company as Company).tax_mode || 'SIN_FACTURA');
+  const finalTotalCharges = taxBreakdown.total_with_tax;
+  const pendingBalance = Number((finalTotalCharges - totalPayments + totalAdjustments).toFixed(2));
 
   let cobranzaStatus: 'PAGADO' | 'PARCIALMENTE_PAGADO' | 'PENDIENTE' = 'PENDIENTE';
   if (pendingBalance <= 0.009) {
@@ -160,7 +197,9 @@ export async function getCompanyAccountSummary(
 
   const summary: CompanyAccountSummary = {
     company: company as Company,
-    total_charges: Number(totalCharges.toFixed(2)),
+    subtotal_base: Number(totalCharges.toFixed(2)),
+    tax_breakdown: taxBreakdown,
+    total_charges: finalTotalCharges,
     total_payments: Number(totalPayments.toFixed(2)),
     total_adjustments: Number(totalAdjustments.toFixed(2)),
     pending_balance: pendingBalance,

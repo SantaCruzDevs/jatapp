@@ -20,6 +20,7 @@ import {
 } from '@/lib/services/customers';
 import { getProfiles } from '@/lib/services/users';
 import { Company, CompanyUser, Profile } from '@/types/database.types';
+import { EditCompanyModal } from '@/app/(dashboard)/clients/companies/[companyId]/components/EditCompanyModal';
 import { 
   Building2, 
   Search, 
@@ -565,15 +566,15 @@ export default function CompaniesAdminPage() {
         </div>
       </main>
 
-      {/* Company Create / Edit Modal */}
-      {(isCreateModal || editingCompany) && (
+      {/* Company Create Modal */}
+      {isCreateModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#1E293B] border border-[#334155] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-5 relative">
             <div className="flex items-center justify-between border-b border-[#334155] pb-4">
               <div className="flex items-center gap-3">
                 <Building2 className="w-5 h-5 text-[#FDDE12]" />
                 <h3 className="text-base font-bold font-heading text-white">
-                  {isCreateModal ? 'Registrar Empresa Corporativa' : 'Editar Empresa Corporativa'}
+                  Registrar Empresa Corporativa
                 </h3>
               </div>
               <button onClick={closeCompanyModal} className="text-slate-400 hover:text-white">
@@ -622,23 +623,6 @@ export default function CompaniesAdminPage() {
                 />
               </div>
 
-              {!isCreateModal && (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Estado de la Empresa
-                  </label>
-                  <select
-                    value={formStatus}
-                    onChange={(e) => setFormStatus(e.target.value as any)}
-                    className="w-full bg-[#0F172A] border border-[#334155] text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#FDDE12] cursor-pointer"
-                  >
-                    <option value="active">Activa (Habilitada para vales)</option>
-                    <option value="suspended">Suspendida (Bloqueo de crédito)</option>
-                    <option value="inactive">Inactiva</option>
-                  </select>
-                </div>
-              )}
-
               <div className="pt-3 border-t border-[#334155] flex items-center justify-end gap-3">
                 <button
                   type="button"
@@ -658,13 +642,26 @@ export default function CompaniesAdminPage() {
                       <span>Guardando...</span>
                     </>
                   ) : (
-                    <span>{isCreateModal ? 'Registrar Empresa' : 'Guardar Cambios'}</span>
+                    <span>Registrar Empresa</span>
                   )}
                 </button>
               </div>
             </form>
           </div>
         </div>
+      )}
+
+      {/* Modern Full Edit Company Modal */}
+      {editingCompany && (
+        <EditCompanyModal
+          company={editingCompany}
+          isOpen={!!editingCompany}
+          onClose={() => setEditingCompany(null)}
+          onSuccess={() => {
+            setEditingCompany(null);
+            fetchCompanies();
+          }}
+        />
       )}
 
       {/* Corporate Users Link Modal */}

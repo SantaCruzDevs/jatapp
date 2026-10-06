@@ -30,6 +30,8 @@ export interface Customer {
   updated_at: string;
 }
 
+export type CompanyTaxMode = 'IVA_13' | 'EFECTIVA_14_94' | 'SIN_FACTURA';
+
 export interface Company {
   id: string;
   business_name: string;
@@ -41,6 +43,7 @@ export interface Company {
   primary_contact_customer_id: string | null;
   status: 'active' | 'inactive' | 'suspended';
   uses_ticket_contract: boolean;
+  tax_mode?: CompanyTaxMode;
   created_at: string;
   updated_at: string;
 }

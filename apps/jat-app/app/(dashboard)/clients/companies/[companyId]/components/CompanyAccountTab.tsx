@@ -32,6 +32,7 @@ import {
 import Link from 'next/link';
 
 import { StatementPdfModal } from './StatementPdfModal';
+import { SelectedTicketDetailModal } from './SelectedTicketDetailModal';
 import { getPaymentLiquidationData, generatePaymentLiquidationPDF } from '@/lib/services/liquidation-pdf';
 import { createClient } from '@/lib/supabase/client';
 
@@ -60,6 +61,7 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
   const [isStatementPdfModalOpen, setIsStatementPdfModalOpen] = useState(false);
   const [selectedPaymentForDetail, setSelectedPaymentForDetail] = useState<CompanyMovement | null>(null);
+  const [selectedTicketForModal, setSelectedTicketForModal] = useState<{ rideId?: string; rideCode?: string; ticketCode?: string } | null>(null);
   const [allocatedRides, setAllocatedRides] = useState<AllocatedRideItem[]>([]);
   const [loadingAllocations, setLoadingAllocations] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -361,6 +363,13 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
             <p className="text-xs text-slate-400">
               Estado financiero consolidado de la cuenta corporativa
             </p>
+            {summary.tax_breakdown && summary.tax_breakdown.tax_mode !== 'SIN_FACTURA' && (
+              <div className="mt-2 pt-2 border-t border-[#334155]/80 flex flex-wrap items-center gap-4 text-xs font-mono">
+                <span className="text-slate-400">Subtotal Servicios: <strong className="text-white">Bs. {summary.subtotal_base.toFixed(2)}</strong></span>
+                <span className="text-amber-400 font-semibold">{summary.tax_breakdown.tax_rate_label}: <strong>+ Bs. {summary.tax_breakdown.tax_amount.toFixed(2)}</strong></span>
+                <span className="text-slate-300">Total Cargos: <strong>Bs. {summary.total_charges.toFixed(2)}</strong></span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3 flex-wrap w-full md:w-auto">
@@ -775,14 +784,14 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
                       {allocatedRides.map((item) => (
                         <tr key={item.id} className="hover:bg-[#334155]/30">
                           <td className="py-2.5 px-3">
-                            <Link
-                              href={`/t/${item.ride.ride_code}`}
-                              target="_blank"
-                              className="font-mono font-bold text-[#FDDE12] hover:underline hover:text-yellow-300 block text-xs"
-                              title="Ver detalle digital de la carrera"
+                            <button
+                              type="button"
+                              onClick={() => setSelectedTicketForModal({ rideId: item.ride.id, rideCode: item.ride.ride_code, ticketCode: item.ride.ticket_code })}
+                              className="font-mono font-bold text-[#FDDE12] hover:underline hover:text-yellow-300 block text-xs text-left"
+                              title="Ver detalle completo del ticket corporativo"
                             >
                               {item.ride.ticket_code}
-                            </Link>
+                            </button>
                             <span className="text-[10px] text-slate-400 font-mono">Carrera: {item.ride.ride_code}</span>
                           </td>
 
@@ -885,6 +894,15 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
         companyEmail={companyInfo.email}
         isOpen={isStatementPdfModalOpen}
         onClose={() => setIsStatementPdfModalOpen(false)}
+      />
+
+      {/* MODAL 5: DETALLE DE TICKET SELECCIONADO */}
+      <SelectedTicketDetailModal
+        rideId={selectedTicketForModal?.rideId}
+        rideCode={selectedTicketForModal?.rideCode}
+        ticketCode={selectedTicketForModal?.ticketCode}
+        isOpen={!!selectedTicketForModal}
+        onClose={() => setSelectedTicketForModal(null)}
       />
     </div>
   );

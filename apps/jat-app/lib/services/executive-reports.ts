@@ -38,6 +38,9 @@ export interface CompanyPerformanceReport {
   company_id: string;
   business_name: string;
   nit: string | null;
+  tax_mode?: string;
+  subtotal_base?: number;
+  tax_amount?: number;
   total_rides: number;
   total_charges: number;
   total_payments: number;
