@@ -31,6 +31,7 @@ interface CompanyOverviewTabProps {
   requestersCount: number;
   portalEnabled: boolean;
   onNavigateTab: (tab: 'solicitantes' | 'contratos' | 'cuenta' | 'carreras') => void;
+  onOpenEditCompany?: () => void;
 }
 
 export default function CompanyOverviewTab({
@@ -39,18 +40,10 @@ export default function CompanyOverviewTab({
   requestersCount,
   portalEnabled,
   onNavigateTab,
+  onOpenEditCompany,
 }: CompanyOverviewTabProps) {
   const [accountSummary, setAccountSummary] = useState<CompanyAccountSummary | null>(null);
   const [loadingFinancial, setLoadingFinancial] = useState(true);
-  const [currentTaxMode, setCurrentTaxMode] = useState<CompanyTaxMode>(company.tax_mode || 'SIN_FACTURA');
-  const [updatingTaxMode, setUpdatingTaxMode] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [currentCompany, setCurrentCompany] = useState<Company>(company);
-
-  useEffect(() => {
-    setCurrentCompany(company);
-    setCurrentTaxMode(company.tax_mode || 'SIN_FACTURA');
-  }, [company]);
 
   const loadSummary = useCallback(async () => {
     setLoadingFinancial(true);
@@ -65,22 +58,8 @@ export default function CompanyOverviewTab({
   }, [company.id]);
 
   useEffect(() => {
-    setCurrentTaxMode(company.tax_mode || 'SIN_FACTURA');
     loadSummary();
   }, [company.tax_mode, loadSummary]);
-
-  const handleTaxModeChange = async (newMode: CompanyTaxMode) => {
-    setUpdatingTaxMode(true);
-    try {
-      await updateCompany(company.id, { tax_mode: newMode });
-      setCurrentTaxMode(newMode);
-      await loadSummary();
-    } catch (err) {
-      console.error('Error updating tax mode:', err);
-    } finally {
-      setUpdatingTaxMode(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -159,20 +138,22 @@ export default function CompanyOverviewTab({
               <Building2 className="w-4 h-4 text-[#FDDE12]" />
               <span>DATOS GENERALES DE LA EMPRESA</span>
             </h4>
-            <button
-              onClick={() => setIsEditModalOpen(true)}
-              className="text-[11px] font-semibold text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1"
-              title="Editar datos de la empresa"
-            >
-              <FileText className="w-3 h-3 text-sky-400" />
-              <span>Editar Empresa</span>
-            </button>
+            {onOpenEditCompany && (
+              <button
+                onClick={onOpenEditCompany}
+                className="text-[11px] font-semibold text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1"
+                title="Editar datos de la empresa"
+              >
+                <FileText className="w-3 h-3 text-sky-400" />
+                <span>Editar Empresa</span>
+              </button>
+            )}
           </div>
 
           <div className="space-y-2 text-xs">
             <div className="flex justify-between py-1 border-b border-[#334155]/50">
               <span className="text-slate-400">Razón Social:</span>
-              <strong className="text-white font-semibold">{currentCompany.business_name}</strong>
+              <strong className="text-white font-semibold">{company.business_name}</strong>
             </div>
 
             {company.trade_name && (
@@ -192,19 +173,13 @@ export default function CompanyOverviewTab({
                 <FileText className="w-3 h-3 text-amber-400" />
                 Tratamiento Tributario:
               </span>
-              <div className="flex items-center gap-2">
-                {updatingTaxMode && <Loader2 className="w-3 h-3 animate-spin text-amber-400" />}
-                <select
-                  value={currentTaxMode}
-                  disabled={updatingTaxMode}
-                  onChange={(e) => handleTaxModeChange(e.target.value as CompanyTaxMode)}
-                  className="bg-[#0F172A] border border-[#334155] text-amber-300 font-semibold text-[11px] rounded px-2 py-0.5 focus:outline-none focus:border-amber-500"
-                >
-                  <option value="SIN_FACTURA">Sin Factura (0.00%)</option>
-                  <option value="IVA_13">Factura Directa IVA (13.00%)</option>
-                  <option value="EFECTIVA_14_94">Tasa Efectiva Surtasa (14.94%)</option>
-                </select>
-              </div>
+              <strong className="text-amber-300 font-semibold font-mono">
+                {company.tax_mode === 'IVA_13'
+                  ? 'Factura Directa IVA (13.00%)'
+                  : company.tax_mode === 'EFECTIVA_14_94'
+                  ? 'Impuesto Efectivo (14.94%)'
+                  : 'Sin Impuesto (0.00%)'}
+              </strong>
             </div>
 
             <div className="flex justify-between py-1 border-b border-[#334155]/50">
@@ -304,17 +279,6 @@ export default function CompanyOverviewTab({
           )}
         </div>
       </div>
-
-      <EditCompanyModal
-        company={currentCompany}
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSuccess={(updated) => {
-          setCurrentCompany(updated);
-          setCurrentTaxMode(updated.tax_mode || 'SIN_FACTURA');
-          loadSummary();
-        }}
-      />
     </div>
   );
 }

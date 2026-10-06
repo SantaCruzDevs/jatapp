@@ -321,6 +321,9 @@ function formatPeriodLabel(
 /**
  * Generates professional jsPDF document for corporate account statement.
  */
+/**
+ * Generates professional jsPDF document for corporate account statement in Letter size.
+ */
 export function generateCorporateStatementPDF(payload: CorporateStatementPayload): {
   pdfBlob: Blob;
   pdfArrayBuffer: ArrayBuffer;
@@ -329,115 +332,122 @@ export function generateCorporateStatementPDF(payload: CorporateStatementPayload
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
-    format: 'a4',
+    format: 'letter', // 215.9 x 279.4 mm
   });
+
+  const pageWidth = 215.9;
+  const pageHeight = 279.4;
+  const marginX = 15;
+  const contentWidth = pageWidth - marginX * 2; // 185.9 mm
+  const rightX = marginX + contentWidth; // 200.9 mm
 
   const primaryColor = [15, 23, 42]; // #0F172A Dark Slate
   const brandYellow = [253, 222, 18]; // #FDDE12 MotoJAT Yellow
-  const accentGreen = [16, 185, 129]; // #10B981 Emerald
   const textColor = [51, 65, 85]; // #334155 Slate
+  const roseColor = [225, 29, 72]; // #E11D48 Rose
 
   // Header branding banner
   doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.rect(0, 0, 210, 28, 'F');
+  doc.rect(0, 0, pageWidth, 28, 'F');
 
   // Yellow accent line
   doc.setFillColor(brandYellow[0], brandYellow[1], brandYellow[2]);
-  doc.rect(0, 28, 210, 2, 'F');
+  doc.rect(0, 28, pageWidth, 2, 'F');
 
   // MotoJAT Title
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
   doc.setTextColor(255, 255, 255);
-  doc.text('MOTOJAT', 14, 14);
+  doc.text('MOTOJAT', marginX, 14);
 
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(253, 222, 18);
-  doc.text('MOTOSERVI JUSTO A TIEMPO S.R.L. — COBRANZAS CORPORATIVAS', 14, 21);
+  doc.setTextColor(brandYellow[0], brandYellow[1], brandYellow[2]);
+  doc.text('MOTOSERVI JUSTO A TIEMPO S.R.L. — COBRANZAS CORPORATIVAS', marginX, 21);
 
   // Document Title
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  doc.text('ESTADO DE CUENTA CORPORATIVO', 200, 16, { align: 'right' });
+  doc.text('ESTADO DE CUENTA CORPORATIVO', rightX, 16, { align: 'right' });
 
   // Company Details & Statement Metadata Header Box
   doc.setFillColor(248, 250, 252);
   doc.setDrawColor(226, 232, 240);
-  doc.roundedRect(14, 34, 182, 26, 2, 2, 'FD');
+  doc.roundedRect(marginX, 34, contentWidth, 26, 2, 2, 'FD');
 
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text(payload.company.business_name, 18, 42);
+  doc.text(payload.company.business_name, marginX + 4, 42);
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-  doc.text(`NIT: ${payload.company.nit}`, 18, 48);
-  doc.text(`Período Consultado: ${payload.period_label}`, 18, 54);
+  doc.text(`NIT: ${payload.company.nit}`, marginX + 4, 48);
+  doc.text(`Período Consultado: ${payload.period_label}`, marginX + 4, 54);
 
-  doc.text(`Fecha de Emisión: ${payload.generation_date}`, 192, 42, { align: 'right' });
-  doc.text(`Moneda: Bolivianos (Bs.)`, 192, 48, { align: 'right' });
-  doc.text(`Documento de Conciliación`, 192, 54, { align: 'right' });
+  doc.text(`Fecha de Emisión: ${payload.generation_date}`, rightX - 4, 42, { align: 'right' });
+  doc.text(`Moneda: Bolivianos (Bs.)`, rightX - 4, 48, { align: 'right' });
+  doc.text(`Documento de Conciliación`, rightX - 4, 54, { align: 'right' });
 
   // Financial Summary Cards Box
   doc.setFillColor(15, 23, 42);
-  doc.roundedRect(14, 64, 182, 22, 2, 2, 'F');
+  doc.roundedRect(marginX, 64, contentWidth, 22, 2, 2, 'F');
 
-  const colW = 182 / (payload.summary.overpayment_credit > 0 ? 5 : 4);
+  const cardCols = payload.summary.overpayment_credit > 0 ? 5 : 4;
+  const colW = contentWidth / cardCols;
 
   // Card 1: Tickets
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(148, 163, 184);
-  doc.text('TICKETS PENDIENTES', 14 + 6, 71);
+  doc.text('TICKETS PENDIENTES', marginX + 4, 71);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  doc.text(`${payload.summary.total_pending_tickets}`, 14 + 6, 80);
+  doc.text(`${payload.summary.total_pending_tickets}`, marginX + 4, 80);
 
   // Card 2: Total Cargos
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(148, 163, 184);
-  doc.text('TOTAL CARGOS', 14 + colW + 4, 71);
+  doc.text('TOTAL CARGOS', marginX + colW + 4, 71);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  doc.text(`Bs. ${payload.summary.total_charges.toFixed(2)}`, 14 + colW + 4, 80);
+  doc.text(`Bs. ${payload.summary.total_charges.toFixed(2)}`, marginX + colW + 4, 80);
 
   // Card 3: Total Aplicado
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(148, 163, 184);
-  doc.text('PAGOS APLICADOS', 14 + colW * 2 + 4, 71);
+  doc.text('PAGOS APLICADOS', marginX + colW * 2 + 4, 71);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(16, 185, 129);
-  doc.text(`Bs. ${payload.summary.total_applied.toFixed(2)}`, 14 + colW * 2 + 4, 80);
+  doc.text(`Bs. ${payload.summary.total_applied.toFixed(2)}`, marginX + colW * 2 + 4, 80);
 
   // Card 4: Saldo Pendiente
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(253, 222, 18);
-  doc.text('SALDO PENDIENTE', 14 + colW * 3 + 4, 71);
+  doc.text('SALDO PENDIENTE', marginX + colW * 3 + 4, 71);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(253, 222, 18);
-  doc.text(`Bs. ${payload.summary.total_pending.toFixed(2)}`, 14 + colW * 3 + 4, 80);
+  doc.text(`Bs. ${payload.summary.total_pending.toFixed(2)}`, marginX + colW * 3 + 4, 80);
 
   // Card 5 (Optional): Saldo a favor
   if (payload.summary.overpayment_credit > 0) {
     doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(56, 189, 248);
-    doc.text('SALDO A FAVOR', 14 + colW * 4 + 4, 71);
+    doc.text('SALDO A FAVOR', marginX + colW * 4 + 4, 71);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(56, 189, 248);
-    doc.text(`Bs. ${payload.summary.overpayment_credit.toFixed(2)}`, 14 + colW * 4 + 4, 80);
+    doc.text(`Bs. ${payload.summary.overpayment_credit.toFixed(2)}`, marginX + colW * 4 + 4, 80);
   }
 
   // Table Data Preparation: Fecha, Nº Ticket, Nº Móvil, Origen, Destino, Monto
@@ -465,12 +475,13 @@ export function generateCorporateStatementPDF(payload: CorporateStatementPayload
     ]);
   }
 
-  // AutoTable configuration
+  // AutoTable configuration for Letter format
   autoTable(doc, {
     startY: 90,
     head: tableHead,
     body: tableBody,
     theme: 'grid',
+    margin: { left: marginX, right: marginX },
     headStyles: {
       fillColor: [15, 23, 42],
       textColor: [255, 255, 255],
@@ -484,111 +495,129 @@ export function generateCorporateStatementPDF(payload: CorporateStatementPayload
       cellPadding: 2.5,
     },
     columnStyles: {
-      0: { cellWidth: 26 }, // Fecha
+      0: { cellWidth: 27 }, // Fecha
       1: { cellWidth: 30, fontStyle: 'bold' }, // Nº Ticket
       2: { cellWidth: 18 }, // Nº Móvil
       3: { cellWidth: 46 }, // Origen
       4: { cellWidth: 46 }, // Destino
-      5: { cellWidth: 16, halign: 'right', fontStyle: 'bold' }, // Monto
+      5: { cellWidth: 18.9, halign: 'right', fontStyle: 'bold' }, // Monto
     },
     styles: {
       overflow: 'linebreak',
     },
     showHead: 'everyPage',
     didDrawPage: (data) => {
-      // Footer on every page
       const pageCount = (doc as unknown as { internal: { getNumberOfPages: () => number } }).internal.getNumberOfPages();
-      const pageHeight = doc.internal.pageSize.height || 297;
 
-      doc.setFontSize(7);
+      doc.setFontSize(7.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(148, 163, 184);
 
-      // Line
+      // Line at bottom
       doc.setDrawColor(226, 232, 240);
-      doc.line(14, pageHeight - 16, 196, pageHeight - 16);
+      doc.line(marginX, pageHeight - 14, rightX, pageHeight - 14);
 
-      // Disclaimer
+      // Document Footer Text
       doc.text(
-        'Este estado de cuenta refleja los servicios corporativos de MotoJAT con saldo pendiente a la fecha de emisión para su conciliación.',
-        14,
-        pageHeight - 10
+        'MOTOSERVI JUSTO A TIEMPO S.R.L. — Estado de Cuenta Corporativo',
+        marginX,
+        pageHeight - 9
       );
 
       // Page X of Y
-      doc.text(`Página ${data.pageNumber} de ${pageCount}`, 196, pageHeight - 10, { align: 'right' });
+      doc.text(`Página ${data.pageNumber} de ${pageCount}`, rightX, pageHeight - 9, { align: 'right' });
     },
   });
 
-  // Final Financial Summary Box matching MotoJAT Commercial Standard
-  const finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 150;
-  if (finalY < 235) {
-    const summaryBoxX = 112;
-    const summaryBoxY = finalY + 6;
-    const hasTax = payload.summary.tax_mode && payload.summary.tax_mode !== 'SIN_FACTURA';
-    const boxHeight = hasTax ? (payload.summary.total_applied > 0 ? 36 : 30) : (payload.summary.total_applied > 0 ? 30 : 24);
+  // Calculate position after table
+  let finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 150;
 
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(203, 213, 225);
-    doc.roundedRect(summaryBoxX, summaryBoxY, 84, boxHeight, 2, 2, 'FD');
-
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-
-    let currY = summaryBoxY + 5.5;
-    doc.text('TOTAL SERVICIOS:', summaryBoxX + 4, currY);
-    doc.text(`Bs. ${payload.summary.subtotal_base.toFixed(2)}`, summaryBoxX + 80, currY, { align: 'right' });
-
-    if (payload.summary.tax_mode === 'IVA_13') {
-      currY += 5.5;
-      doc.text('IVA (13%):', summaryBoxX + 4, currY);
-      doc.text(`Bs. ${payload.summary.tax_amount.toFixed(2)}`, summaryBoxX + 80, currY, { align: 'right' });
-    } else if (payload.summary.tax_mode === 'EFECTIVA_14_94') {
-      currY += 5.5;
-      doc.text('IMPUESTO EFECTIVO (14.94%):', summaryBoxX + 4, currY);
-      doc.text(`Bs. ${payload.summary.tax_amount.toFixed(2)}`, summaryBoxX + 80, currY, { align: 'right' });
-    }
-
-    currY += 5.5;
-    doc.setFont('helvetica', 'bold');
-    doc.text('TOTAL:', summaryBoxX + 4, currY);
-    doc.text(`Bs. ${payload.summary.total_charges.toFixed(2)}`, summaryBoxX + 80, currY, { align: 'right' });
-
-    if (payload.summary.total_applied > 0) {
-      currY += 5.5;
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(16, 185, 129); // Emerald
-      doc.text('PAGOS APLICADOS (-):', summaryBoxX + 4, currY);
-      doc.text(`Bs. ${payload.summary.total_applied.toFixed(2)}`, summaryBoxX + 80, currY, { align: 'right' });
-    }
-
-    currY += 5.5;
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(225, 29, 72); // Rose
-    doc.text('SALDO PENDIENTE:', summaryBoxX + 4, currY);
-    doc.text(`Bs. ${payload.summary.total_pending.toFixed(2)}`, summaryBoxX + 80, currY, { align: 'right' });
+  // If remaining vertical space is insufficient for summary box + signature (~80 mm required), start new page
+  if (finalY + 80 > pageHeight - 20) {
+    doc.addPage();
+    finalY = 35;
   }
-  if (finalY < 250) {
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text('NOTA DE CONCILIACIÓN DE COBRANZA', 14, finalY + 8);
 
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-    doc.text(
-      'El cliente puede utilizar los códigos de ticket y carrera detallados arriba para conciliar con sus vales físicos o comprobantes internos.',
-      14,
-      finalY + 13
-    );
-    doc.text(
-      'Para consultas, aclaraciones de ruta o soporte administrativo, favor contactar a MotoJAT (tickets@motojat.com / Tel. Oficina).',
-      14,
-      finalY + 18
-    );
+  // Final Financial Summary Box (Positioned on the Right)
+  const summaryBoxWidth = 86;
+  const summaryBoxX = rightX - summaryBoxWidth;
+  const summaryBoxY = finalY + 6;
+  const hasTax = payload.summary.tax_mode && payload.summary.tax_mode !== 'SIN_FACTURA';
+  const boxHeight = hasTax
+    ? (payload.summary.total_applied > 0 ? 36 : 30)
+    : (payload.summary.total_applied > 0 ? 30 : 24);
+
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(203, 213, 225);
+  doc.roundedRect(summaryBoxX, summaryBoxY, summaryBoxWidth, boxHeight, 2, 2, 'FD');
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+
+  let currY = summaryBoxY + 5.5;
+  doc.text('TOTAL SERVICIOS:', summaryBoxX + 4, currY);
+  doc.text(`Bs. ${payload.summary.subtotal_base.toFixed(2)}`, summaryBoxX + summaryBoxWidth - 4, currY, { align: 'right' });
+
+  if (payload.summary.tax_mode === 'IVA_13') {
+    currY += 5.5;
+    doc.text('IVA (13%):', summaryBoxX + 4, currY);
+    doc.text(`Bs. ${payload.summary.tax_amount.toFixed(2)}`, summaryBoxX + summaryBoxWidth - 4, currY, { align: 'right' });
+  } else if (payload.summary.tax_mode === 'EFECTIVA_14_94') {
+    currY += 5.5;
+    doc.text('IMPUESTO EFECTIVO (14.94%):', summaryBoxX + 4, currY);
+    doc.text(`Bs. ${payload.summary.tax_amount.toFixed(2)}`, summaryBoxX + summaryBoxWidth - 4, currY, { align: 'right' });
+  } else if (payload.summary.tax_mode === 'SIN_FACTURA') {
+    currY += 5.5;
+    doc.text('Sin impuesto (0%):', summaryBoxX + 4, currY);
+    doc.text(`Bs. 0.00`, summaryBoxX + summaryBoxWidth - 4, currY, { align: 'right' });
   }
+
+  currY += 5.5;
+  doc.setFont('helvetica', 'bold');
+  doc.text('TOTAL CARGOS:', summaryBoxX + 4, currY);
+  doc.text(`Bs. ${payload.summary.total_charges.toFixed(2)}`, summaryBoxX + summaryBoxWidth - 4, currY, { align: 'right' });
+
+  if (payload.summary.total_applied > 0) {
+    currY += 5.5;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(16, 185, 129); // Emerald
+    doc.text('PAGOS APLICADOS (-):', summaryBoxX + 4, currY);
+    doc.text(`Bs. ${payload.summary.total_applied.toFixed(2)}`, summaryBoxX + summaryBoxWidth - 4, currY, { align: 'right' });
+  }
+
+  currY += 5.5;
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(roseColor[0], roseColor[1], roseColor[2]); // Rose
+  doc.text('SALDO PENDIENTE:', summaryBoxX + 4, currY);
+  doc.text(`Bs. ${payload.summary.total_pending.toFixed(2)}`, summaryBoxX + summaryBoxWidth - 4, currY, { align: 'right' });
+
+  // Signature and Administrative Footer Section
+  const signatureY = summaryBoxY + boxHeight + 15;
+
+  // Left Side: Generation Date
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+  doc.text(`Fecha de generación: ${payload.generation_date}`, marginX, signatureY + 12);
+
+  // Right Side: Formal Signature Line for Fabiana Pérez
+  const sigBoxWidth = 70;
+  const sigX = rightX - sigBoxWidth;
+
+  doc.setDrawColor(100, 116, 139);
+  doc.line(sigX, signatureY + 10, rightX, signatureY + 10);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9.5);
+  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.text('Fabiana Pérez', sigX + (sigBoxWidth / 2), signatureY + 16, { align: 'center' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+  doc.text('Cobranzas y Administración', sigX + (sigBoxWidth / 2), signatureY + 21, { align: 'center' });
+  doc.text('MOTOSERVI JUSTO A TIEMPO S.R.L.', sigX + (sigBoxWidth / 2), signatureY + 25, { align: 'center' });
 
   // Generate output
   const pdfArrayBuffer = doc.output('arraybuffer');

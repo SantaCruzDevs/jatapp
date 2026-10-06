@@ -203,6 +203,7 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
                   requestersCount={companyRequesters.length}
                   portalEnabled={portalEnabled}
                   onNavigateTab={(tab) => setActiveTab(tab)}
+                  onOpenEditCompany={() => setIsEditCompanyModalOpen(true)}
                 />
               )}
 

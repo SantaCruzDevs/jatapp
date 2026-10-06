@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Company, CompanyTaxMode } from '@/types/database.types';
 import { updateCompany } from '@/lib/services/companies';
 import { 
@@ -40,6 +40,20 @@ export function EditCompanyModal({
 
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen && company) {
+      setBusinessName(company.business_name || '');
+      setTradeName(company.trade_name || '');
+      setNit(company.nit || '');
+      setPhone(company.phone || '');
+      setEmail(company.email || '');
+      setAddress(company.address || '');
+      setTaxMode(company.tax_mode || 'SIN_FACTURA');
+      setStatus(company.status || 'active');
+      setErrorMsg(null);
+    }
+  }, [company, isOpen]);
 
   if (!isOpen) return null;
 
