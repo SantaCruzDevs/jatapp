@@ -285,7 +285,7 @@ export default function DriverPage() {
       return;
     }
     setRideToComplete(ride);
-    setSelectedPaymentMethod(ride.payment_method || 'Efectivo');
+    setSelectedPaymentMethod('Ticket');
     setIsCompleteModalOpen(true);
   };
 

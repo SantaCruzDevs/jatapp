@@ -59,6 +59,7 @@ export default function ClientsPage() {
   const [ci, setCi] = useState('');
   const [address, setAddress] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [usesTicketContract, setUsesTicketContract] = useState(false);
   const [isPrimaryContact, setIsPrimaryContact] = useState(true);
 
   const loadData = useCallback(async (searchQuery?: string) => {
@@ -154,6 +155,7 @@ export default function ClientsPage() {
     setCi('');
     setAddress('');
     setIsActive(true);
+    setUsesTicketContract(false);
     setIsPrimaryContact(true);
     setIsModalOpen(true);
   };
@@ -169,6 +171,7 @@ export default function ClientsPage() {
     setCi(c.ci || '');
     setAddress(c.address || '');
     setIsActive(c.is_active !== undefined ? c.is_active : true);
+    setUsesTicketContract(Boolean(c.uses_ticket_contract));
     setIsPrimaryContact(Boolean(c.is_primary_contact));
     setIsModalOpen(true);
   };
@@ -195,6 +198,7 @@ export default function ClientsPage() {
           ci: ci.trim() || null,
           address: address.trim() || null,
           is_active: isActive,
+          uses_ticket_contract: usesTicketContract,
           is_primary_contact: Boolean(companyId && isPrimaryContact),
         });
 
@@ -245,6 +249,7 @@ export default function ClientsPage() {
           ci: ci.trim() || null,
           address: address.trim() || null,
           is_active: isActive,
+          uses_ticket_contract: usesTicketContract,
           is_primary_contact: false,
         });
 
@@ -438,7 +443,7 @@ export default function ClientsPage() {
                       <Users className={`w-4 h-4 ${regType === 'particular' ? 'text-[#FDDE12]' : 'text-slate-500'}`} />
                       <span>Particular</span>
                     </div>
-                    <span className="text-[10px] text-slate-400 mt-1">Persona física independiente</span>
+                    <span className="text-[10px] text-slate-400 mt-1">Persona independiente</span>
                   </button>
                 </div>
               )}
@@ -702,7 +707,7 @@ export default function ClientsPage() {
                       }}
                       className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-[#FDDE12]"
                     >
-                      <option value="">-- Cliente Particular (Persona Física) --</option>
+                      <option value="">-- Cliente Particular (Persona) --</option>
                       {companies.map((comp) => (
                         <option key={comp.id} value={comp.id}>
                           Empresa: {comp.business_name} {comp.nit ? `(NIT: ${comp.nit})` : ''}
@@ -724,7 +729,7 @@ export default function ClientsPage() {
                     />
                   </div>
 
-                  {companyId && (
+                  {companyId ? (
                     <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1">
                       <label className="flex items-center gap-2 cursor-pointer text-amber-300 font-semibold">
                         <input
@@ -735,6 +740,21 @@ export default function ClientsPage() {
                         />
                         <span>Marcar como Contacto Principal de la Empresa</span>
                       </label>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-xl space-y-1">
+                      <label className="flex items-center gap-2 cursor-pointer text-indigo-300 font-semibold text-xs">
+                        <input
+                          type="checkbox"
+                          checked={usesTicketContract}
+                          onChange={(e) => setUsesTicketContract(e.target.checked)}
+                          className="w-4 h-4 rounded border-indigo-500 text-[#FDDE12] focus:ring-0 bg-[#0F172A]"
+                        />
+                        <span>Cliente con contrato (Habilitado para Ticket)</span>
+                      </label>
+                      <p className="text-[11px] text-slate-400 pl-6">
+                        Habilita el cobro de carreras mediante Ticket corporativo. El contrato PDF puede adjuntarse posteriormente.
+                      </p>
                     </div>
                   )}
 

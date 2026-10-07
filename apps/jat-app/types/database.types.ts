@@ -26,6 +26,7 @@ export interface Customer {
   ci: string | null;
   address: string | null;
   is_active: boolean;
+  uses_ticket_contract: boolean;
   created_at: string;
   updated_at: string;
 }

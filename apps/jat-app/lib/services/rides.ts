@@ -281,132 +281,28 @@ export async function updateRideStatus(
   rideId: string,
   newStatus: RideStatus,
   reason?: string,
-  driverIdToRelease?: string | null,
+  _driverIdToRelease?: string | null,
   paymentMethod?: PaymentMethod
 ): Promise<{ error: Error | null }> {
   const supabase = createClient();
 
-  const { data: authData } = await supabase.auth.getUser();
-  const userId = authData.user?.id || null;
-
-  // 1. Fetch current status and surcharge status
-  const { data: currentRide, error: fetchErr } = await supabase
-    .from('rides')
-    .select('status, ride_code, driver_id, surcharge_status')
-    .eq('id', rideId)
-    .single();
-
-  if (fetchErr || !currentRide) {
-    return { error: new Error('La carrera no existe o fue eliminada.') };
-  }
-
-  const currentStatus = currentRide.status as RideStatus;
-
-  // 2. Validate transition
-  const allowed = VALID_TRANSITIONS[currentStatus] || [];
-  if (!allowed.includes(newStatus)) {
-    return {
-      error: new Error(`Transición de estado inválida: No es posible cambiar de '${currentStatus.toUpperCase()}' a '${newStatus.toUpperCase()}'.`),
-    };
-  }
-
-  // REGLA FUNDAMENTAL DE NEGOCIO: UN SOBRECARGO PENDIENTE IMPIDE FINALIZAR LA CARRERA PARA TODOS LOS ACTORES
-  if (newStatus === 'completed' && currentRide.surcharge_status === 'pending') {
-    return {
-      error: new Error(
-        'Existe un sobrecargo pendiente de aprobación. El operador debe aprobarlo o rechazarlo antes de finalizar la carrera.'
-      ),
-    };
-  }
-
-  // Get current user role for role-based transition validation & timeline attribution
-  let userRole = 'OPERATOR';
-  if (userId) {
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .single();
-    if (prof?.role) userRole = prof.role;
-  }
-
-  // MOTOQUERO MÁQUINA DE ESTADOS: assigned -> ontheway -> completed (NO assigned -> completed directly for driver)
-  if (userRole === 'DRIVER' && currentStatus === 'assigned' && newStatus === 'completed') {
-    return {
-      error: new Error(
-        "El motoquero debe iniciar la carrera ('En Camino') antes de poder finalizarla. El cierre directo en estado asignado es exclusivo de Central por contingencia."
-      ),
-    };
-  }
-
-  // EL MOTOQUERO NO PUEDE CANCELAR CARRERAS: Solo Operador/Central puede cancelar.
-  if (userRole === 'DRIVER' && newStatus === 'cancelled') {
-    return {
-      error: new Error(
-        'El motoquero no está autorizado a cancelar carreras. La cancelación debe ser procesada exclusivamente por la Central de Operaciones.'
-      ),
-    };
-  }
-
-  // 3. Concurrency-safe atomic update
-  const updatePayload: Record<string, unknown> = {
-    status: newStatus,
-    updated_at: new Date().toISOString(),
-  };
-  if (paymentMethod) {
-    updatePayload.payment_method = paymentMethod;
-  }
-
-  const { data: updatedData, error: updateErr } = await supabase
-    .from('rides')
-    .update(updatePayload)
-    .eq('id', rideId)
-    .eq('status', currentStatus)
-    .select();
-
-  if (updateErr) {
-    console.error('Error updating ride status:', updateErr);
-    return { error: new Error(updateErr.message) };
-  }
-
-  if (!updatedData || updatedData.length === 0) {
-    return { error: new Error('Conflicto de concurrencia: El estado de esta carrera fue modificado simultáneamente por otra centralista.') };
-  }
-
-  // 4. Release driver to 'available' if completed or cancelled
-  const targetDriverId = driverIdToRelease || currentRide.driver_id;
-  if ((newStatus === 'completed' || newStatus === 'cancelled') && targetDriverId) {
-    await updateDriverStatus(targetDriverId, 'available');
-  }
-
-  // 5. Timeline Titles with Clear Actor Attribution
-  const titleMap: Record<RideStatus, string> = {
-    pending: 'Carrera Creada',
-    assigned: 'Motoquero Asignado',
-    ontheway: 'En Camino / En Curso',
-    completed: 'Servicio Completado',
-    cancelled: 'Carrera Cancelada',
-  };
-
-  let eventTitle = titleMap[newStatus] || `Estado cambiado a ${newStatus}`;
-  if (newStatus === 'completed') {
-    if (userRole === 'DRIVER') {
-      eventTitle = 'Servicio Completado — Motoquero';
-    } else if (currentStatus === 'assigned') {
-      eventTitle = 'Servicio Completado — Central (Contingencia)';
-    } else {
-      eventTitle = 'Servicio Completado — Central';
-    }
-  }
-
-  await addTimelineEvent({
-    ride_id: rideId,
-    status_from: currentStatus,
-    status_to: newStatus,
-    event_title: eventTitle,
-    event_description: reason || `Transición de ${currentStatus.toUpperCase()} a ${newStatus.toUpperCase()}`,
-    actor_id: userId,
+  const { data, error: rpcErr } = await supabase.rpc('update_ride_status_atomic', {
+    p_ride_id: rideId,
+    p_new_status: newStatus,
+    p_payment_method: paymentMethod || null,
+    p_reason: reason || null,
   });
+
+  if (rpcErr) {
+    console.error('Error in update_ride_status_atomic RPC:', rpcErr);
+    return { error: new Error(rpcErr.message) };
+  }
+
+  const result = data as { success?: boolean; error?: string } | null;
+
+  if (result && result.success === false) {
+    return { error: new Error(result.error || 'No se pudo actualizar la carrera.') };
+  }
 
   return { error: null };
 }

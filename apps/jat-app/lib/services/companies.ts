@@ -27,6 +27,7 @@ export async function createCompany(payload: {
   email?: string | null;
   address?: string | null;
   tax_mode?: CompanyTaxMode;
+  uses_ticket_contract?: boolean;
 }): Promise<Company> {
   const supabase = createBrowserClient();
   const { data, error } = await supabase
@@ -39,6 +40,7 @@ export async function createCompany(payload: {
       email: payload.email?.trim() || null,
       address: payload.address?.trim() || null,
       tax_mode: payload.tax_mode || 'SIN_FACTURA',
+      uses_ticket_contract: payload.uses_ticket_contract !== undefined ? payload.uses_ticket_contract : false,
       status: 'active',
     })
     .select()
@@ -64,6 +66,7 @@ export async function updateCompany(
     primary_contact_customer_id?: string | null;
     status?: 'active' | 'inactive' | 'suspended';
     tax_mode?: CompanyTaxMode;
+    uses_ticket_contract?: boolean;
   }
 ): Promise<Company> {
   const supabase = createBrowserClient();
@@ -80,6 +83,7 @@ export async function updateCompany(
   if (payload.primary_contact_customer_id !== undefined) updateData.primary_contact_customer_id = payload.primary_contact_customer_id || null;
   if (payload.status !== undefined) updateData.status = payload.status;
   if (payload.tax_mode !== undefined) updateData.tax_mode = payload.tax_mode;
+  if (payload.uses_ticket_contract !== undefined) updateData.uses_ticket_contract = payload.uses_ticket_contract;
 
   const { data, error } = await supabase
     .from('companies')

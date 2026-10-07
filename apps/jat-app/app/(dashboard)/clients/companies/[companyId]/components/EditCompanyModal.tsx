@@ -37,6 +37,7 @@ export function EditCompanyModal({
   const [address, setAddress] = useState(company.address || '');
   const [taxMode, setTaxMode] = useState<CompanyTaxMode>(company.tax_mode || 'SIN_FACTURA');
   const [status, setStatus] = useState<'active' | 'inactive' | 'suspended'>(company.status || 'active');
+  const [usesTicketContract, setUsesTicketContract] = useState<boolean>(Boolean(company.uses_ticket_contract));
 
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -51,6 +52,7 @@ export function EditCompanyModal({
       setAddress(company.address || '');
       setTaxMode(company.tax_mode || 'SIN_FACTURA');
       setStatus(company.status || 'active');
+      setUsesTicketContract(Boolean(company.uses_ticket_contract));
       setErrorMsg(null);
     }
   }, [company, isOpen]);
@@ -77,6 +79,7 @@ export function EditCompanyModal({
         address: address || null,
         tax_mode: taxMode,
         status: status,
+        uses_ticket_contract: usesTicketContract,
       });
 
       onSuccess(updated);
@@ -235,6 +238,21 @@ export function EditCompanyModal({
                 <option value="inactive">Inactiva</option>
               </select>
             </div>
+          </div>
+
+          <div className="p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-xl space-y-1">
+            <label className="flex items-center gap-2 cursor-pointer text-indigo-300 font-semibold text-xs">
+              <input
+                type="checkbox"
+                checked={usesTicketContract}
+                onChange={(e) => setUsesTicketContract(e.target.checked)}
+                className="w-4 h-4 rounded border-indigo-500 text-[#FDDE12] focus:ring-0 bg-[#0F172A]"
+              />
+              <span>Habilitar cobro mediante Ticket</span>
+            </label>
+            <p className="text-[11px] text-slate-400 pl-6">
+              Permite cobrar carreras mediante Ticket. Requiere un contrato activo con MotoJAT.
+            </p>
           </div>
 
           {/* Action Footer */}

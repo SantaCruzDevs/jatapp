@@ -578,6 +578,7 @@ export default function OperationsPage() {
       user_id: null,
       company_id: item.company_id,
       is_active: item.is_active,
+      uses_ticket_contract: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       companies: item.company_id && item.company_business_name ? {
@@ -936,7 +937,13 @@ export default function OperationsPage() {
       return;
     }
 
-    const { error } = await updateRideStatus(ride.id, newStatus, undefined, ride.driver_id);
+    const { error } = await updateRideStatus(
+      ride.id,
+      newStatus,
+      undefined,
+      ride.driver_id,
+      newStatus === 'completed' ? 'Ticket' : undefined
+    );
 
     if (error) {
       setErrorMsg(error.message);

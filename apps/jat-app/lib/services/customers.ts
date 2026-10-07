@@ -196,6 +196,7 @@ export async function createCustomer(data: {
   ci?: string | null;
   address?: string | null;
   is_active?: boolean;
+  uses_ticket_contract?: boolean;
   is_primary_contact?: boolean;
 }): Promise<{ customer: Customer | null; error: Error | null }> {
   const supabase = createClient();
@@ -210,6 +211,7 @@ export async function createCustomer(data: {
     ci: data.ci?.trim() || null,
     address: data.address?.trim() || null,
     is_active: data.is_active !== undefined ? data.is_active : true,
+    uses_ticket_contract: data.uses_ticket_contract !== undefined ? data.uses_ticket_contract : false,
   };
 
   const { data: newCustomer, error } = await supabase
@@ -251,6 +253,7 @@ export async function updateCustomer(
     ci?: string | null;
     address?: string | null;
     is_active?: boolean;
+    uses_ticket_contract?: boolean;
     is_primary_contact?: boolean;
   }
 ): Promise<{ customer: Customer | null; error: Error | null }> {
@@ -279,6 +282,7 @@ export async function updateCustomer(
   if (data.ci !== undefined) updatePayload.ci = data.ci?.trim() || null;
   if (data.address !== undefined) updatePayload.address = data.address?.trim() || null;
   if (data.is_active !== undefined) updatePayload.is_active = data.is_active;
+  if (data.uses_ticket_contract !== undefined) updatePayload.uses_ticket_contract = data.uses_ticket_contract;
 
   const { data: updated, error } = await supabase
     .from('customers')
