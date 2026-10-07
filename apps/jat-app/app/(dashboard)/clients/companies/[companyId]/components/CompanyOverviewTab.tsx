@@ -5,6 +5,7 @@ import { Company, CompanyTaxMode } from '@/types/database.types';
 import { CustomerWithCompany } from '@/lib/services/customers';
 import { getCompanyAccountSummary, CompanyAccountSummary } from '@/lib/services/company-account';
 import { updateCompany } from '@/lib/services/companies';
+import { createClient } from '@/lib/supabase/client';
 import { 
   Building2, 
   Star, 
@@ -44,6 +45,52 @@ export default function CompanyOverviewTab({
 }: CompanyOverviewTabProps) {
   const [accountSummary, setAccountSummary] = useState<CompanyAccountSummary | null>(null);
   const [loadingFinancial, setLoadingFinancial] = useState(true);
+
+  const [hasActiveContract, setHasActiveContract] = useState<boolean | null>(null);
+  const [checkingContract, setCheckingContract] = useState(false);
+  const [contractCheckError, setContractCheckError] = useState(false);
+
+  const checkActiveContract = useCallback(async () => {
+    if (!company.uses_ticket_contract) {
+      setHasActiveContract(false);
+      setContractCheckError(false);
+      return;
+    }
+    setCheckingContract(true);
+    setContractCheckError(false);
+    try {
+      const supabase = createClient();
+      const todayStr = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('company_contracts')
+        .select('id, start_date, end_date')
+        .eq('company_id', company.id)
+        .eq('status', 'active');
+
+      if (error) {
+        setContractCheckError(true);
+        setHasActiveContract(null);
+      } else if (!data || data.length === 0) {
+        setHasActiveContract(false);
+      } else {
+        const isValidDate = data.some((c) => {
+          const startOk = !c.start_date || c.start_date <= todayStr;
+          const endOk = !c.end_date || c.end_date >= todayStr;
+          return startOk && endOk;
+        });
+        setHasActiveContract(isValidDate);
+      }
+    } catch {
+      setContractCheckError(true);
+      setHasActiveContract(null);
+    } finally {
+      setCheckingContract(false);
+    }
+  }, [company.id, company.uses_ticket_contract]);
+
+  useEffect(() => {
+    checkActiveContract();
+  }, [checkActiveContract]);
 
   const loadSummary = useCallback(async () => {
     setLoadingFinancial(true);
@@ -97,17 +144,64 @@ export default function CompanyOverviewTab({
           </p>
         </div>
 
-        {/* Card 3: Commercial Modality */}
+        {/* Card 3: Commercial Modality & Ticket Contract Status */}
         <div 
           onClick={() => onNavigateTab('contratos')}
-          className="p-4 bg-[#0F172A]/70 border border-sky-500/30 hover:border-sky-500/60 rounded-xl space-y-1 cursor-pointer transition-all hover:bg-[#0F172A]"
+          className={`p-4 bg-[#0F172A]/70 border rounded-xl space-y-1 cursor-pointer transition-all hover:bg-[#0F172A] ${
+            !company.uses_ticket_contract
+              ? 'border-slate-700 hover:border-slate-500'
+              : contractCheckError
+                ? 'border-rose-500/40 hover:border-rose-500/70'
+                : hasActiveContract
+                  ? 'border-emerald-500/30 hover:border-emerald-500/60'
+                  : 'border-amber-500/40 hover:border-amber-500/70'
+          }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-sky-400 font-bold uppercase tracking-wider">MODALIDAD TICKET</span>
-            <FileText className="w-4 h-4 text-sky-400" />
+            <span className={`text-[10px] font-bold uppercase tracking-wider ${
+              !company.uses_ticket_contract
+                ? 'text-slate-400'
+                : contractCheckError
+                  ? 'text-rose-400'
+                  : hasActiveContract
+                    ? 'text-emerald-400'
+                    : 'text-amber-400'
+            }`}>
+              {company.uses_ticket_contract ? 'MODALIDAD TICKET' : 'MODALIDAD COMERCIAL'}
+            </span>
+            <FileText className={`w-4 h-4 ${
+              !company.uses_ticket_contract
+                ? 'text-slate-400'
+                : contractCheckError
+                  ? 'text-rose-400'
+                  : hasActiveContract
+                    ? 'text-emerald-400'
+                    : 'text-amber-400'
+            }`} />
           </div>
           <div className="text-sm font-bold text-white pt-1">
             {company.uses_ticket_contract ? 'Ticket Corporativo' : 'Efectivo / QR Normal'}
+          </div>
+          <div className="pt-0.5">
+            {!company.uses_ticket_contract ? (
+              <span className="text-[10px] text-slate-500 italic">No habilitada para Ticket</span>
+            ) : checkingContract ? (
+              <span className="inline-flex items-center gap-1 text-[10px] text-slate-400">
+                <Loader2 className="w-3 h-3 animate-spin text-[#FDDE12]" /> Validando vigencia...
+              </span>
+            ) : contractCheckError ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/30">
+                <ShieldAlert className="w-3 h-3" /> Error de consulta
+              </span>
+            ) : hasActiveContract ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                <CheckCircle2 className="w-3 h-3" /> Contrato vigente
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/30">
+                <ShieldAlert className="w-3 h-3" /> Sin contrato vigente
+              </span>
+            )}
           </div>
           <p className="text-[10px] text-sky-300 hover:underline flex items-center gap-1 pt-0.5">
             Ver contratos de tickets →

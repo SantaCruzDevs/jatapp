@@ -138,43 +138,45 @@ export default function CompanyContractsTab({
       </div>
 
       {/* Active Contract Alert Box */}
-      {activeContract ? (
-        <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
-              <FileCheck className="w-4 h-4" />
-              <span>CONTRATO VIGENTE ACTUAL</span>
+      {!loading && !errorMsg && (
+        activeContract ? (
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
+                <FileCheck className="w-4 h-4" />
+                <span>CONTRATO VIGENTE ACTUAL</span>
+              </div>
+              {getContractStatusBadge(activeContract.status)}
             </div>
-            {getContractStatusBadge(activeContract.status)}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-300 pt-1">
+              <div>
+                <span className="text-[10px] text-slate-500 block">Número de Contrato</span>
+                <strong className="font-mono text-white">{activeContract.contract_number || 'Sin número registrado'}</strong>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-500 block">Vigencia</span>
+                <strong className="font-mono text-white">
+                  {activeContract.start_date ? new Date(activeContract.start_date).toLocaleDateString('es-BO') : 'N/A'} — {activeContract.end_date ? new Date(activeContract.end_date).toLocaleDateString('es-BO') : 'Indefinido'}
+                </strong>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-500 block">Documento Adjunto</span>
+                {activeContract.pdf_file_path ? (
+                  <span className="text-sky-400 font-medium flex items-center gap-1 text-[11px]">
+                    <Download className="w-3 h-3" /> PDF Disponible
+                  </span>
+                ) : (
+                  <span className="text-slate-500 italic text-[11px]">Sin PDF adjunto</span>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-300 pt-1">
-            <div>
-              <span className="text-[10px] text-slate-500 block">Número de Contrato</span>
-              <strong className="font-mono text-white">{activeContract.contract_number || 'Sin número registrado'}</strong>
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-500 block">Vigencia</span>
-              <strong className="font-mono text-white">
-                {activeContract.start_date ? new Date(activeContract.start_date).toLocaleDateString('es-BO') : 'N/A'} — {activeContract.end_date ? new Date(activeContract.end_date).toLocaleDateString('es-BO') : 'Indefinido'}
-              </strong>
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-500 block">Documento Adjunto</span>
-              {activeContract.pdf_file_path ? (
-                <span className="text-sky-400 font-medium flex items-center gap-1 text-[11px]">
-                  <Download className="w-3 h-3" /> PDF Disponible
-                </span>
-              ) : (
-                <span className="text-slate-500 italic text-[11px]">Sin PDF adjunto</span>
-              )}
-            </div>
+        ) : (
+          <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-xl flex items-center gap-3 text-slate-400 text-xs">
+            <Clock className="w-5 h-5 text-slate-500 flex-shrink-0" />
+            <span>No existe un contrato con estado VIGENTE (Active) registrado para esta empresa.</span>
           </div>
-        </div>
-      ) : (
-        <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-xl flex items-center gap-3 text-slate-400 text-xs">
-          <Clock className="w-5 h-5 text-slate-500 flex-shrink-0" />
-          <span>No existe un contrato con estado VIGENTE (Active) registrado para esta empresa.</span>
-        </div>
+        )
       )}
 
       {/* Contracts History Table */}
@@ -188,6 +190,11 @@ export default function CompanyContractsTab({
           <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-[#FDDE12]" />
             <span className="text-xs">Cargando historial de contratos...</span>
+          </div>
+        ) : errorMsg ? (
+          <div className="p-8 text-center text-rose-400 text-xs bg-rose-500/10 rounded-xl border border-rose-500/30 flex flex-col items-center gap-2">
+            <AlertCircle className="w-6 h-6" />
+            <span>No se pudo consultar el historial de contratos debido a un error de consulta o permisos.</span>
           </div>
         ) : contracts.length === 0 ? (
           <p className="p-8 text-center text-slate-500 text-xs bg-[#0F172A]/50 rounded-xl border border-[#334155]">
