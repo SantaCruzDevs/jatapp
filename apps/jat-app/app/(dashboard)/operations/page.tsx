@@ -895,6 +895,7 @@ export default function OperationsPage() {
 
   // Completion Modal Handlers (Central Operations)
   const handleOpenCompletionModal = (ride: RideWithDetails) => {
+    setErrorMsg(null);
     if (ride.surcharge_status === 'pending') {
       setErrorMsg('Existe un sobrecargo pendiente de aprobación. El operador debe aprobarlo o rechazarlo antes de finalizar la carrera.');
       return;
@@ -2389,12 +2390,31 @@ export default function OperationsPage() {
                 onClick={() => {
                   setIsCompletionModalOpen(false);
                   setRideToComplete(null);
+                  setErrorMsg(null);
                 }}
                 className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-[#0F172A]"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Banner de Error Contextual DENTRO del Modal */}
+            {errorMsg && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs flex items-center justify-between gap-2 animate-fadeIn">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                  <span className="font-medium">{errorMsg}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setErrorMsg(null)}
+                  className="text-rose-400 hover:text-white p-0.5 rounded transition-colors flex-shrink-0"
+                  title="Cerrar advertencia"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
             {/* Resumen de Carrera */}
             <div className="bg-[#0F172A] border border-[#334155] rounded-xl p-4 space-y-2 text-xs">
@@ -2433,7 +2453,10 @@ export default function OperationsPage() {
                 <div className="grid grid-cols-3 gap-3">
                   <button
                     type="button"
-                    onClick={() => setCompletionPaymentMethod('Ticket')}
+                    onClick={() => {
+                      setCompletionPaymentMethod('Ticket');
+                      setErrorMsg(null);
+                    }}
                     className={`py-3 px-3 rounded-xl border font-bold text-xs flex flex-col items-center gap-1.5 transition-all ${
                       completionPaymentMethod === 'Ticket'
                         ? 'bg-[#FDDE12]/10 border-[#FDDE12] text-[#FDDE12] ring-2 ring-[#FDDE12]/30'
@@ -2446,7 +2469,10 @@ export default function OperationsPage() {
 
                   <button
                     type="button"
-                    onClick={() => setCompletionPaymentMethod('Efectivo')}
+                    onClick={() => {
+                      setCompletionPaymentMethod('Efectivo');
+                      setErrorMsg(null);
+                    }}
                     className={`py-3 px-3 rounded-xl border font-bold text-xs flex flex-col items-center gap-1.5 transition-all ${
                       completionPaymentMethod === 'Efectivo'
                         ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 ring-2 ring-emerald-500/30'
@@ -2459,7 +2485,10 @@ export default function OperationsPage() {
 
                   <button
                     type="button"
-                    onClick={() => setCompletionPaymentMethod('QR')}
+                    onClick={() => {
+                      setCompletionPaymentMethod('QR');
+                      setErrorMsg(null);
+                    }}
                     className={`py-3 px-3 rounded-xl border font-bold text-xs flex flex-col items-center gap-1.5 transition-all ${
                       completionPaymentMethod === 'QR'
                         ? 'bg-sky-500/10 border-sky-500 text-sky-400 ring-2 ring-sky-500/30'
@@ -2479,6 +2508,7 @@ export default function OperationsPage() {
                   onClick={() => {
                     setIsCompletionModalOpen(false);
                     setRideToComplete(null);
+                    setErrorMsg(null);
                   }}
                   className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition-colors text-xs"
                 >
