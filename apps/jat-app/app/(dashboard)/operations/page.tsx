@@ -39,6 +39,8 @@ import {
   ShieldCheck,
   Ban,
   FileText,
+  Banknote,
+  QrCode,
   GripVertical,
   Settings,
   AlertTriangle,
@@ -96,13 +98,17 @@ export default function OperationsPage() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isCompletionModalOpen, setIsCompletionModalOpen] = useState(false);
 
   // Active Selection for Modals
   const [selectedRideForAssign, setSelectedRideForAssign] = useState<RideWithDetails | null>(null);
   const [selectedRideForDetail, setSelectedRideForDetail] = useState<RideWithDetails | null>(null);
   const [selectedRideForCancel, setSelectedRideForCancel] = useState<RideWithDetails | null>(null);
+  const [rideToComplete, setRideToComplete] = useState<RideWithDetails | null>(null);
+  const [completionPaymentMethod, setCompletionPaymentMethod] = useState<PaymentMethod>('Ticket');
   const [cancelReason, setCancelReason] = useState('');
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
+  const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
 
   const [selectedRideTimeline, setSelectedRideTimeline] = useState<RideTimelineWithActor[]>([]);
   const [loadingTimeline, setLoadingTimeline] = useState(false);
@@ -528,10 +534,7 @@ export default function OperationsPage() {
         setErrorMsg('Existe un sobrecargo pendiente de aprobación. El operador debe aprobarlo o rechazarlo antes de finalizar la carrera.');
         return;
       }
-      if (!window.confirm('¿Confirmar finalización de esta carrera? Esta acción finalizará administrativamente la carrera desde Central.')) {
-        return;
-      }
-      await handleTransitionStatus(ride, 'completed');
+      handleOpenCompletionModal(ride);
       return;
     }
   };
@@ -890,6 +893,97 @@ export default function OperationsPage() {
     loadData(true);
   };
 
+  // Completion Modal Handlers (Central Operations)
+  const handleOpenCompletionModal = (ride: RideWithDetails) => {
+    if (ride.surcharge_status === 'pending') {
+      setErrorMsg('Existe un sobrecargo pendiente de aprobación. El operador debe aprobarlo o rechazarlo antes de finalizar la carrera.');
+      return;
+    }
+    setRideToComplete(ride);
+    setCompletionPaymentMethod('Ticket');
+    setIsCompletionModalOpen(true);
+  };
+
+  const handleConfirmCompletionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rideToComplete) return;
+
+    if (!completionPaymentMethod) {
+      setErrorMsg('Selecciona la forma de pago antes de finalizar.');
+      return;
+    }
+
+    setIsSubmittingCompletion(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    const targetRide = rideToComplete;
+    const nowIso = new Date().toISOString();
+
+    // Optimistic local state update
+    setRides((prev) =>
+      prev.map((r) => (r.id === targetRide.id ? { ...r, status: 'completed' as const, payment_method: completionPaymentMethod } : r))
+    );
+
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+    if (isOffline) {
+      try {
+        const offRides = await getOfflineRides();
+        const existing = offRides.find((r) => r.offline_id === targetRide.id);
+        if (existing) {
+          existing.status = 'completed';
+          existing.payment_method = completionPaymentMethod;
+          existing.updated_at = nowIso;
+          await saveOfflineRide(existing);
+        }
+
+        await enqueueOfflineOperation({
+          operation_id: `op_${crypto.randomUUID()}`,
+          offline_ride_id: targetRide.id,
+          operation_type: 'COMPLETE_RIDE',
+          created_at: nowIso,
+          payload: { status: 'completed', payment_method: completionPaymentMethod },
+          status: 'PENDING',
+          retry_count: 0,
+        });
+
+        setSuccessMsg(`Carrera ${targetRide.ride_code} finalizada LOCALMENTE en modo contingencia.`);
+        setIsCompletionModalOpen(false);
+        setIsDetailModalOpen(false);
+        setRideToComplete(null);
+        await loadData(true);
+      } catch (offErr) {
+        setErrorMsg(`Error guardando finalización local: ${(offErr as Error).message}`);
+      } finally {
+        setIsSubmittingCompletion(false);
+      }
+      return;
+    }
+
+    const { error } = await updateRideStatus(
+      targetRide.id,
+      'completed',
+      undefined,
+      targetRide.driver_id,
+      completionPaymentMethod
+    );
+
+    setIsSubmittingCompletion(false);
+
+    if (error) {
+      setErrorMsg(error.message);
+      await loadData(true);
+      return;
+    }
+
+    setSuccessMsg(`Carrera ${targetRide.ride_code} finalizada exitosamente desde Central (${completionPaymentMethod}).`);
+    setIsCompletionModalOpen(false);
+    setIsDetailModalOpen(false);
+    setRideToComplete(null);
+    loadData(true);
+  };
+
   // State Transitions
   const handleTransitionStatus = async (ride: RideWithDetails, newStatus: RideStatus) => {
     setErrorMsg(null);
@@ -942,7 +1036,7 @@ export default function OperationsPage() {
       newStatus,
       undefined,
       ride.driver_id,
-      newStatus === 'completed' ? 'Ticket' : undefined
+      undefined
     );
 
     if (error) {
@@ -1337,7 +1431,7 @@ export default function OperationsPage() {
                       ride={ride}
                       onDragStart={() => setDraggingRide(ride)}
                       onDragEnd={() => { setDraggingRide(null); setDragOverColumnId(null); }}
-                      onComplete={() => handleTransitionStatus(ride, 'completed')}
+                      onComplete={() => handleOpenCompletionModal(ride)}
                       onCancel={() => handleOpenCancelModal(ride)}
                       onViewDetail={() => handleOpenDetailModal(ride)}
                       getPriorityBadge={getPriorityBadge}
@@ -2074,15 +2168,7 @@ export default function OperationsPage() {
                       <span>Iniciar En Camino</span>
                     </button>
                     <button
-                      onClick={() => {
-                        if (selectedRideForDetail.surcharge_status === 'pending') {
-                          setErrorMsg('Existe un sobrecargo pendiente de aprobación. El operador debe aprobarlo o rechazarlo antes de finalizar la carrera.');
-                          return;
-                        }
-                        if (window.confirm('¿Confirmar finalización de esta carrera? Esta acción finalizará administrativamente la carrera desde Central.')) {
-                          handleTransitionStatus(selectedRideForDetail, 'completed');
-                        }
-                      }}
+                      onClick={() => handleOpenCompletionModal(selectedRideForDetail)}
                       disabled={selectedRideForDetail.surcharge_status === 'pending'}
                       className={`px-4 py-2 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md ${
                         selectedRideForDetail.surcharge_status === 'pending'
@@ -2106,15 +2192,7 @@ export default function OperationsPage() {
                 {selectedRideForDetail.status === 'ontheway' && (
                   <>
                     <button
-                      onClick={() => {
-                        if (selectedRideForDetail.surcharge_status === 'pending') {
-                          setErrorMsg('Existe un sobrecargo pendiente de aprobación. El operador debe aprobarlo o rechazarlo antes de finalizar la carrera.');
-                          return;
-                        }
-                        if (window.confirm('¿Confirmar finalización de esta carrera? Esta acción finalizará administrativamente la carrera desde Central.')) {
-                          handleTransitionStatus(selectedRideForDetail, 'completed');
-                        }
-                      }}
+                      onClick={() => handleOpenCompletionModal(selectedRideForDetail)}
                       disabled={selectedRideForDetail.surcharge_status === 'pending'}
                       className={`px-4 py-2 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md ${
                         selectedRideForDetail.surcharge_status === 'pending'
@@ -2285,6 +2363,137 @@ export default function OperationsPage() {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 6: FINALIZACIÓN Y MÉTODO DE PAGO */}
+      {isCompletionModalOpen && rideToComplete && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-[#1E293B] border border-[#334155] rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-5 animate-scaleUp">
+            <div className="flex items-center justify-between pb-3 border-b border-[#334155]">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white font-heading">
+                    Finalización de Carrera y Cobro
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Selecciona el método de pago para registrar la finalización desde Central
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsCompletionModalOpen(false);
+                  setRideToComplete(null);
+                }}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-[#0F172A]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Resumen de Carrera */}
+            <div className="bg-[#0F172A] border border-[#334155] rounded-xl p-4 space-y-2 text-xs">
+              <div className="flex items-center justify-between text-slate-300">
+                <span className="text-slate-400">Código Carrera:</span>
+                <span className="font-mono font-bold text-sky-400">{rideToComplete.ride_code}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-300">
+                <span className="text-slate-400">Cliente / Solicitante:</span>
+                <span className="font-semibold text-white">
+                  {rideToComplete.requester_person} ({rideToComplete.requester_company})
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-slate-300">
+                <span className="text-slate-400">Origen:</span>
+                <span className="font-medium text-slate-200 line-clamp-1 max-w-[240px]">{rideToComplete.pickup_address}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-300">
+                <span className="text-slate-400">Destino:</span>
+                <span className="font-medium text-slate-200 line-clamp-1 max-w-[240px]">{rideToComplete.destination_address}</span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-[#334155] text-sm">
+                <span className="font-bold text-slate-300">Monto Total a Cobrar:</span>
+                <span className="font-bold text-[#FDDE12] font-mono text-base">
+                  Bs. {Number(rideToComplete.total_fare).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {/* Selección de Método de Pago */}
+            <form onSubmit={handleConfirmCompletionSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  Forma de Pago <span className="text-rose-400">*</span>
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCompletionPaymentMethod('Ticket')}
+                    className={`py-3 px-3 rounded-xl border font-bold text-xs flex flex-col items-center gap-1.5 transition-all ${
+                      completionPaymentMethod === 'Ticket'
+                        ? 'bg-[#FDDE12]/10 border-[#FDDE12] text-[#FDDE12] ring-2 ring-[#FDDE12]/30'
+                        : 'bg-[#0F172A] border-[#334155] text-slate-400 hover:text-white hover:border-slate-500'
+                    }`}
+                  >
+                    <FileText className="w-5 h-5" />
+                    <span>Ticket</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCompletionPaymentMethod('Efectivo')}
+                    className={`py-3 px-3 rounded-xl border font-bold text-xs flex flex-col items-center gap-1.5 transition-all ${
+                      completionPaymentMethod === 'Efectivo'
+                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 ring-2 ring-emerald-500/30'
+                        : 'bg-[#0F172A] border-[#334155] text-slate-400 hover:text-white hover:border-slate-500'
+                    }`}
+                  >
+                    <Banknote className="w-5 h-5" />
+                    <span>Efectivo</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCompletionPaymentMethod('QR')}
+                    className={`py-3 px-3 rounded-xl border font-bold text-xs flex flex-col items-center gap-1.5 transition-all ${
+                      completionPaymentMethod === 'QR'
+                        ? 'bg-sky-500/10 border-sky-500 text-sky-400 ring-2 ring-sky-500/30'
+                        : 'bg-[#0F172A] border-[#334155] text-slate-400 hover:text-white hover:border-slate-500'
+                    }`}
+                  >
+                    <QrCode className="w-5 h-5" />
+                    <span>QR</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Botones de Acción */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#334155]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCompletionModalOpen(false);
+                    setRideToComplete(null);
+                  }}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition-colors text-xs"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingCompletion}
+                  className="px-5 py-2.5 bg-[#FDDE12] hover:bg-[#e2c60e] text-[#0F172A] font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 text-xs disabled:opacity-50"
+                >
+                  {isSubmittingCompletion && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>Confirmar Finalización</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
