@@ -6,6 +6,7 @@ import { CustomerWithCompany } from '@/lib/services/customers';
 import { getCompanyAccountSummary, CompanyAccountSummary } from '@/lib/services/company-account';
 import { updateCompany } from '@/lib/services/companies';
 import { createClient } from '@/lib/supabase/client';
+import { getOperationalCompanyContract } from '@/lib/services/company-contracts';
 import { 
   Building2, 
   Star, 
@@ -20,7 +21,8 @@ import {
   Loader2, 
   Users,
   IdCard,
-  CheckCircle2
+  CheckCircle2,
+  Clock
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -47,38 +49,41 @@ export default function CompanyOverviewTab({
   const [loadingFinancial, setLoadingFinancial] = useState(true);
 
   const [hasActiveContract, setHasActiveContract] = useState<boolean | null>(null);
+  const [futureContractStartDate, setFutureContractStartDate] = useState<string | null>(null);
   const [checkingContract, setCheckingContract] = useState(false);
   const [contractCheckError, setContractCheckError] = useState(false);
 
   const checkActiveContract = useCallback(async () => {
     if (!company.uses_ticket_contract) {
       setHasActiveContract(false);
+      setFutureContractStartDate(null);
       setContractCheckError(false);
       return;
     }
     setCheckingContract(true);
     setContractCheckError(false);
+    setFutureContractStartDate(null);
     try {
-      const supabase = createClient();
-      const todayStr = new Date().toISOString().split('T')[0];
-      const { data, error } = await supabase
-        .from('company_contracts')
-        .select('id, start_date, end_date')
-        .eq('company_id', company.id)
-        .eq('status', 'active');
-
-      if (error) {
-        setContractCheckError(true);
-        setHasActiveContract(null);
-      } else if (!data || data.length === 0) {
-        setHasActiveContract(false);
+      const operational = await getOperationalCompanyContract(company.id);
+      if (operational) {
+        setHasActiveContract(true);
       } else {
-        const isValidDate = data.some((c) => {
-          const startOk = !c.start_date || c.start_date <= todayStr;
-          const endOk = !c.end_date || c.end_date >= todayStr;
-          return startOk && endOk;
-        });
-        setHasActiveContract(isValidDate);
+        setHasActiveContract(false);
+        // Check for scheduled future draft contract
+        const supabase = createClient();
+        const todayStr = new Date().toISOString().split('T')[0];
+        const { data: futureData } = await supabase
+          .from('company_contracts')
+          .select('start_date')
+          .eq('company_id', company.id)
+          .eq('status', 'draft')
+          .gt('start_date', todayStr)
+          .order('start_date', { ascending: true })
+          .limit(1);
+
+        if (futureData && futureData.length > 0 && futureData[0].start_date) {
+          setFutureContractStartDate(futureData[0].start_date);
+        }
       }
     } catch {
       setContractCheckError(true);
@@ -154,7 +159,9 @@ export default function CompanyOverviewTab({
                 ? 'border-rose-500/40 hover:border-rose-500/70'
                 : hasActiveContract
                   ? 'border-emerald-500/30 hover:border-emerald-500/60'
-                  : 'border-amber-500/40 hover:border-amber-500/70'
+                  : futureContractStartDate
+                    ? 'border-sky-500/40 hover:border-sky-500/70'
+                    : 'border-amber-500/40 hover:border-amber-500/70'
           }`}
         >
           <div className="flex items-center justify-between">
@@ -165,7 +172,9 @@ export default function CompanyOverviewTab({
                   ? 'text-rose-400'
                   : hasActiveContract
                     ? 'text-emerald-400'
-                    : 'text-amber-400'
+                    : futureContractStartDate
+                      ? 'text-sky-400'
+                      : 'text-amber-400'
             }`}>
               {company.uses_ticket_contract ? 'MODALIDAD TICKET' : 'MODALIDAD COMERCIAL'}
             </span>
@@ -176,7 +185,9 @@ export default function CompanyOverviewTab({
                   ? 'text-rose-400'
                   : hasActiveContract
                     ? 'text-emerald-400'
-                    : 'text-amber-400'
+                    : futureContractStartDate
+                      ? 'text-sky-400'
+                      : 'text-amber-400'
             }`} />
           </div>
           <div className="text-sm font-bold text-white pt-1">
@@ -196,6 +207,10 @@ export default function CompanyOverviewTab({
             ) : hasActiveContract ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
                 <CheckCircle2 className="w-3 h-3" /> Contrato vigente
+              </span>
+            ) : futureContractStartDate ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-300 bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-500/30">
+                <Clock className="w-3 h-3 text-sky-400" /> Contrato programado ({new Date(futureContractStartDate).toLocaleDateString('es-BO')})
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/30">

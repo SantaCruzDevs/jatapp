@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { CompanyContract } from '@/types/database.types';
+import { getContractPdfSignedUrl } from '@/lib/services/company-contracts';
 import { 
   FileText, 
   CheckCircle2, 
@@ -12,8 +13,11 @@ import {
   Download, 
   ShieldCheck, 
   FileCheck,
-  Clock
+  Clock,
+  Plus,
+  ExternalLink
 } from 'lucide-react';
+import { AddContractModal } from './AddContractModal';
 
 interface CompanyContractsTabProps {
   companyId: string;
@@ -29,6 +33,31 @@ export default function CompanyContractsTab({
   const [contracts, setContracts] = useState<CompanyContract[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [canAddContract, setCanAddContract] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  const checkUserPermissions = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (prof && (prof.role === 'SUPERADMIN' || prof.role === 'ADMIN')) {
+        setCanAddContract(true);
+      } else {
+        setCanAddContract(false);
+      }
+    } catch (e) {
+      console.warn('Error checking user contract permissions:', e);
+      setCanAddContract(false);
+    }
+  }, []);
 
   const loadContracts = useCallback(async () => {
     setLoading(true);
@@ -53,9 +82,23 @@ export default function CompanyContractsTab({
 
   useEffect(() => {
     loadContracts();
-  }, [loadContracts]);
+    checkUserPermissions();
+  }, [loadContracts, checkUserPermissions]);
 
   const activeContract = contracts.find((c) => c.status === 'active');
+
+  const handleOpenPdf = async (pdfFilePath: string) => {
+    try {
+      const signedUrl = await getContractPdfSignedUrl(pdfFilePath);
+      if (signedUrl) {
+        window.open(signedUrl, '_blank');
+      } else {
+        alert('No se pudo generar el enlace de acceso al archivo PDF.');
+      }
+    } catch {
+      alert('Error al acceder al documento PDF.');
+    }
+  };
 
   const getContractStatusBadge = (status: CompanyContract['status']) => {
     switch (status) {
@@ -138,7 +181,7 @@ export default function CompanyContractsTab({
       </div>
 
       {/* Active Contract Alert Box */}
-      {!loading && !errorMsg && (
+      {!loading && !errorMsg && contracts.length > 0 && (
         activeContract ? (
           <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-2">
             <div className="flex items-center justify-between">
@@ -162,9 +205,13 @@ export default function CompanyContractsTab({
               <div>
                 <span className="text-[10px] text-slate-500 block">Documento Adjunto</span>
                 {activeContract.pdf_file_path ? (
-                  <span className="text-sky-400 font-medium flex items-center gap-1 text-[11px]">
+                  <button
+                    onClick={() => handleOpenPdf(activeContract.pdf_file_path!)}
+                    className="text-sky-400 hover:text-sky-300 font-medium flex items-center gap-1 text-[11px] hover:underline"
+                  >
                     <Download className="w-3 h-3" /> PDF Disponible
-                  </span>
+                    <ExternalLink className="w-3 h-3 ml-0.5" />
+                  </button>
                 ) : (
                   <span className="text-slate-500 italic text-[11px]">Sin PDF adjunto</span>
                 )}
@@ -172,19 +219,41 @@ export default function CompanyContractsTab({
             </div>
           </div>
         ) : (
-          <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-xl flex items-center gap-3 text-slate-400 text-xs">
-            <Clock className="w-5 h-5 text-slate-500 flex-shrink-0" />
-            <span>No existe un contrato con estado VIGENTE (Active) registrado para esta empresa.</span>
+          <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-xl flex items-center justify-between gap-3 text-slate-400 text-xs">
+            <div className="flex items-center gap-3">
+              <Clock className="w-5 h-5 text-slate-500 flex-shrink-0" />
+              <span>No existe un contrato con estado VIGENTE (Active) registrado para esta empresa.</span>
+            </div>
+            {canAddContract && (
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-[#0F172A] font-extrabold rounded-xl text-xs transition-all flex-shrink-0 shadow-md shadow-sky-500/20"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Agregar Contrato</span>
+              </button>
+            )}
           </div>
         )
       )}
 
-      {/* Contracts History Table */}
+      {/* Contracts History Table & Header */}
       <div className="space-y-3">
-        <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-          <FileText className="w-4 h-4 text-sky-400" />
-          <span>Historial de Contratos Corporativos ({contracts.length})</span>
-        </h4>
+        <div className="flex items-center justify-between">
+          <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <FileText className="w-4 h-4 text-sky-400" />
+            <span>Historial de Contratos Corporativos ({contracts.length})</span>
+          </h4>
+          {canAddContract && (
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-[#0F172A] font-extrabold rounded-xl text-xs transition-all shadow-md shadow-sky-500/20"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Agregar Contrato</span>
+            </button>
+          )}
+        </div>
 
         {loading ? (
           <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-3">
@@ -197,9 +266,18 @@ export default function CompanyContractsTab({
             <span>No se pudo consultar el historial de contratos debido a un error de consulta o permisos.</span>
           </div>
         ) : contracts.length === 0 ? (
-          <p className="p-8 text-center text-slate-500 text-xs bg-[#0F172A]/50 rounded-xl border border-[#334155]">
-            No hay contratos registrados en el historial de esta empresa.
-          </p>
+          <div className="p-8 text-center text-slate-500 text-xs bg-[#0F172A]/50 rounded-xl border border-[#334155] space-y-3">
+            <p>No existe ningún contrato registrado para esta empresa.</p>
+            {canAddContract && (
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-sky-500 hover:bg-sky-400 text-[#0F172A] font-extrabold rounded-xl text-xs transition-all shadow-md shadow-sky-500/20"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Agregar Contrato</span>
+              </button>
+            )}
+          </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-[#334155]">
             <table className="w-full text-left border-collapse text-xs">
@@ -233,10 +311,14 @@ export default function CompanyContractsTab({
                     </td>
                     <td className="py-3 px-4 text-right">
                       {c.pdf_file_path ? (
-                        <span className="inline-flex items-center gap-1 text-sky-400 font-medium text-[11px]">
+                        <button
+                          onClick={() => handleOpenPdf(c.pdf_file_path!)}
+                          className="inline-flex items-center gap-1 text-sky-400 hover:text-sky-300 font-medium text-[11px] hover:underline"
+                        >
                           <Download className="w-3 h-3" />
                           <span>PDF</span>
-                        </span>
+                          <ExternalLink className="w-3 h-3 ml-0.5" />
+                        </button>
                       ) : (
                         <span className="text-slate-600 italic text-[10px]">Sin PDF</span>
                       )}
@@ -248,6 +330,17 @@ export default function CompanyContractsTab({
           </div>
         )}
       </div>
+
+      {/* Add Contract Modal */}
+      <AddContractModal
+        companyId={companyId}
+        companyName={companyName}
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={() => {
+          loadContracts();
+        }}
+      />
     </div>
   );
 }

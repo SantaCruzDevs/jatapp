@@ -41,7 +41,7 @@ export default function ParticularsTable({
         <Users className="w-12 h-12 text-slate-600" />
         <p className="text-sm font-semibold text-slate-300">No se encontraron clientes particulares</p>
         <p className="text-xs text-slate-500 max-w-sm">
-          Utiliza el botón &quot;+ Nuevo Particular&quot; para registrar un cliente particular persona física.
+          Utiliza el botón &quot;+ Nuevo Particular&quot; para registrar un cliente particular.
         </p>
       </div>
     );
