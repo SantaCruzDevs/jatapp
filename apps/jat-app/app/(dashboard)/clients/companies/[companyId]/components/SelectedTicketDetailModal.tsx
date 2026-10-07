@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { calculateTaxSurcharge } from '@/lib/services/company-account';
 import { CompanyTaxMode } from '@/types/database.types';
+import { formatTicketCode } from '@/lib/services/tickets';
 import { 
   FileText, 
   X, 
@@ -137,7 +138,7 @@ export function SelectedTicketDetailModal({
         setDetails({
           id: data.id,
           ride_code: data.ride_code,
-          ticket_code: corpData?.ticket_code || ticketCode || `TK-${data.ride_code}`,
+          ticket_code: formatTicketCode(data.ride_code, corpData?.ticket_code || ticketCode),
           created_at: data.created_at,
           status: data.status,
           payment_method: data.payment_method,

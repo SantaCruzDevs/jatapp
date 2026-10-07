@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { createClient } from '@/lib/supabase/client';
+import { formatTicketCode } from '@/lib/services/tickets';
 
 export interface LiquidationTicketItem {
   ride_id: string;
@@ -153,7 +154,7 @@ export async function getPaymentLiquidationData(
       const origin = (r.pickup_address || '').trim() || 'No registrado';
       const destination = (r.destination_address || '').trim() || 'No registrado';
       const route = `${origin} → ${destination}`;
-      const ticketCode = corpMap.get(r.id) || `TK-${r.ride_code}`;
+      const ticketCode = formatTicketCode(r.ride_code, corpMap.get(r.id));
 
       const movil = Array.isArray(r.driver) ? r.driver[0]?.movil_number : r.driver?.movil_number;
 

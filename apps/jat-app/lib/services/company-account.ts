@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client';
 import { Company, CompanyTaxMode } from '@/types/database.types';
+import { formatTicketCode } from '@/lib/services/tickets';
 
 export type MovementType = 'PAGO' | 'AJUSTE' | 'CIERRE';
 
@@ -426,7 +427,7 @@ export async function getPaymentAllocatedRides(
         destination_address: r.destination_address,
         total_fare: Number(r.total_fare),
         created_at: r.created_at,
-        ticket_code: corpMap.get(r.id) || `TK-${r.ride_code}`,
+        ticket_code: formatTicketCode(r.ride_code, corpMap.get(r.id)),
         driver_movil: movil || null,
       },
     };

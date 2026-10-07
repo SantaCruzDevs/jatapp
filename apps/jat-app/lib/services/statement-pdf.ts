@@ -3,6 +3,7 @@ import autoTable from 'jspdf-autotable';
 import { createClient } from '@/lib/supabase/client';
 import { calculateTaxSurcharge } from './company-account';
 import { CompanyTaxMode } from '@/types/database.types';
+import { formatTicketCode } from './tickets';
 
 export interface StatementTicketItem {
   ride_id: string;
@@ -218,7 +219,7 @@ export async function getPendingStatementData(
         const origin = (r.pickup_address || '').trim() || 'No registrado';
         const destination = (r.destination_address || '').trim() || 'No registrado';
         const route = `${origin} → ${destination}`;
-        const ticketCode = ticketMap.get(r.id) || `TK-${r.ride_code}`;
+        const ticketCode = formatTicketCode(r.ride_code, ticketMap.get(r.id));
 
         const driverObj = r.driver as unknown as { movil_number?: number } | { movil_number?: number }[] | null;
         const movil = Array.isArray(driverObj)

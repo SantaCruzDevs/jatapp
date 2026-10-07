@@ -47,6 +47,24 @@ export interface PublicTicketPayload {
   payment_method: PaymentMethod | null;
   isValidated: boolean;
 }
+/**
+ * Formats ticket code following MotoJAT standard rules:
+ * - If rawTicketCode exists from DB (e.g. 'TK-2610-000002' or historical 'TK-JAT-2610-000002'), preserve it intact.
+ * - Otherwise (virtual/fallback code for rideCode like 'JAT-2610-000002'), strip 'JAT-' and prepend 'TK-': 'TK-2610-000002'.
+ */
+export function formatTicketCode(rideCode: string, rawTicketCode?: string | null): string {
+  if (rawTicketCode && rawTicketCode.trim()) {
+    return rawTicketCode.trim();
+  }
+  const cleanRideCode = rideCode ? rideCode.trim() : '';
+  if (cleanRideCode.startsWith('JAT-')) {
+    return `TK-${cleanRideCode.slice(4)}`;
+  }
+  if (cleanRideCode.startsWith('TK-')) {
+    return cleanRideCode;
+  }
+  return `TK-${cleanRideCode}`;
+}
 
 /**
  * Computes a deterministic 16-character cryptographic verification hash for anti-tamper public QR verification.
@@ -222,7 +240,7 @@ export async function getDigitalTickets(params?: {
   let result: DigitalTicket[] = (ridesData || []).map((r) => {
     const corp = corpMap.get(r.id);
     const token = generatePublicToken(r.id, r.ride_code, r.created_at);
-    const ticketCode = corp?.ticket_code || `TK-${r.ride_code}`;
+    const ticketCode = formatTicketCode(r.ride_code, corp?.ticket_code);
 
     let settlementStatus: 'COBRADO' | 'PENDIENTE DE LIQUIDACIÓN' | 'LIQUIDADO' | 'CANCELADO' = 'COBRADO';
     if (r.status === 'cancelled') {
@@ -295,9 +313,23 @@ export async function getDigitalTicketByCode(code: string): Promise<{ ticket: Di
   const cleanCode = code.trim();
 
   // Normalize search targets:
-  // If cleanCode is TK-JAT-123456 or JAT-123456, rideCodeTarget will be JAT-123456
-  const rideCodeTarget = cleanCode.startsWith('TK-') ? cleanCode.slice(3) : cleanCode;
+  // cleanCode can be 'TK-2610-000002', 'TK-JAT-2610-000002', 'JAT-2610-000002', or '2610-000002'
   const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(cleanCode);
+
+  let rideCodeTarget = cleanCode;
+  if (cleanCode.startsWith('TK-JAT-')) {
+    rideCodeTarget = `JAT-${cleanCode.slice(7)}`;
+  } else if (cleanCode.startsWith('TK-')) {
+    const rest = cleanCode.slice(3);
+    rideCodeTarget = rest.startsWith('JAT-') ? rest : `JAT-${rest}`;
+  } else if (cleanCode.startsWith('VALE-JAT-')) {
+    rideCodeTarget = `JAT-${cleanCode.slice(9)}`;
+  } else if (cleanCode.startsWith('VALE-')) {
+    const rest = cleanCode.slice(5);
+    rideCodeTarget = rest.startsWith('JAT-') ? rest : `JAT-${rest}`;
+  } else if (!cleanCode.startsWith('JAT-') && !isUuid) {
+    rideCodeTarget = `JAT-${cleanCode}`;
+  }
 
   const ridesSelect = `
     *,
@@ -338,10 +370,11 @@ export async function getDigitalTicketByCode(code: string): Promise<{ ticket: Di
   // 2. If not found directly, check corporate_tickets by ticket_code
   let corpRecord = null;
   if (!ride) {
+    const numericPart = rideCodeTarget.replace(/^JAT-/, '');
     const { data: corp } = await supabase
       .from('corporate_tickets')
       .select('*')
-      .or(`ticket_code.eq.${cleanCode},ticket_code.eq.TK-${rideCodeTarget}`)
+      .or(`ticket_code.eq.${cleanCode},ticket_code.eq.TK-${numericPart},ticket_code.eq.TK-JAT-${numericPart},ticket_code.eq.TK-${rideCodeTarget}`)
       .maybeSingle();
 
     if (corp) {
@@ -368,7 +401,7 @@ export async function getDigitalTicketByCode(code: string): Promise<{ ticket: Di
   }
 
   const token = generatePublicToken(ride.id, ride.ride_code, ride.created_at);
-  const ticketCode = corpRecord?.ticket_code || `TK-${ride.ride_code}`;
+  const ticketCode = formatTicketCode(ride.ride_code, corpRecord?.ticket_code);
 
   let settlementStatus: 'COBRADO' | 'PENDIENTE DE LIQUIDACIÓN' | 'LIQUIDADO' | 'CANCELADO' = 'COBRADO';
   if (ride.status === 'cancelled') {
