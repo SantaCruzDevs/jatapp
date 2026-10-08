@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Topbar from '@/components/layout/Topbar';
 import { getRides, createRide, assignDriverToRide, updateRideStatus, approveSurcharge, rejectSurcharge, RideWithDetails } from '@/lib/services/rides';
+import { isRideTicketEligible } from '@/lib/services/tickets';
 import { findCustomerByPhone, createCustomer, CustomerWithCompany, searchUnifiedRequesters, UnifiedRequesterItem } from '@/lib/services/customers';
 import { getDrivers, DriverWithProfile } from '@/lib/services/drivers';
 import { getCompanies } from '@/lib/services/companies';
@@ -105,7 +106,8 @@ export default function OperationsPage() {
   const [selectedRideForDetail, setSelectedRideForDetail] = useState<RideWithDetails | null>(null);
   const [selectedRideForCancel, setSelectedRideForCancel] = useState<RideWithDetails | null>(null);
   const [rideToComplete, setRideToComplete] = useState<RideWithDetails | null>(null);
-  const [completionPaymentMethod, setCompletionPaymentMethod] = useState<PaymentMethod>('Ticket');
+  const [completionPaymentMethod, setCompletionPaymentMethod] = useState<PaymentMethod>('Efectivo');
+  const [isTicketEligible, setIsTicketEligible] = useState<boolean>(true);
   const [cancelReason, setCancelReason] = useState('');
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
   const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
@@ -894,14 +896,16 @@ export default function OperationsPage() {
   };
 
   // Completion Modal Handlers (Central Operations)
-  const handleOpenCompletionModal = (ride: RideWithDetails) => {
+  const handleOpenCompletionModal = async (ride: RideWithDetails) => {
     setErrorMsg(null);
     if (ride.surcharge_status === 'pending') {
       setErrorMsg('Existe un sobrecargo pendiente de aprobación. El operador debe aprobarlo o rechazarlo antes de finalizar la carrera.');
       return;
     }
     setRideToComplete(ride);
-    setCompletionPaymentMethod('Ticket');
+    const eligible = await isRideTicketEligible(ride);
+    setIsTicketEligible(eligible);
+    setCompletionPaymentMethod(eligible ? 'Ticket' : 'Efectivo');
     setIsCompletionModalOpen(true);
   };
 
@@ -2450,22 +2454,24 @@ export default function OperationsPage() {
                 <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
                   Forma de Pago <span className="text-rose-400">*</span>
                 </label>
-                <div className="grid grid-cols-3 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCompletionPaymentMethod('Ticket');
-                      setErrorMsg(null);
-                    }}
-                    className={`py-3 px-3 rounded-xl border font-bold text-xs flex flex-col items-center gap-1.5 transition-all ${
-                      completionPaymentMethod === 'Ticket'
-                        ? 'bg-[#FDDE12]/10 border-[#FDDE12] text-[#FDDE12] ring-2 ring-[#FDDE12]/30'
-                        : 'bg-[#0F172A] border-[#334155] text-slate-400 hover:text-white hover:border-slate-500'
-                    }`}
-                  >
-                    <FileText className="w-5 h-5" />
-                    <span>Ticket</span>
-                  </button>
+                <div className={`grid ${isTicketEligible ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
+                  {isTicketEligible && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCompletionPaymentMethod('Ticket');
+                        setErrorMsg(null);
+                      }}
+                      className={`py-3 px-3 rounded-xl border font-bold text-xs flex flex-col items-center gap-1.5 transition-all ${
+                        completionPaymentMethod === 'Ticket'
+                          ? 'bg-[#FDDE12]/10 border-[#FDDE12] text-[#FDDE12] ring-2 ring-[#FDDE12]/30'
+                          : 'bg-[#0F172A] border-[#334155] text-slate-400 hover:text-white hover:border-slate-500'
+                      }`}
+                    >
+                      <FileText className="w-5 h-5" />
+                      <span>Ticket</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"

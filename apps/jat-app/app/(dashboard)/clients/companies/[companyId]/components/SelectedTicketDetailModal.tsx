@@ -184,10 +184,10 @@ export function SelectedTicketDetailModal({
             </div>
             <div>
               <h3 className="text-base font-bold text-white font-heading flex items-center gap-2">
-                Detalle de Ticket Corporativo
+                TICKET CORPORATIVO DIGITAL
               </h3>
               <p className="text-xs text-slate-400">
-                Información operacional completa del vale de carrera
+                Información operacional completa del vale corporativo
               </p>
             </div>
           </div>
@@ -204,7 +204,7 @@ export function SelectedTicketDetailModal({
         {loading ? (
           <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-[#FDDE12]" />
-            <span className="text-xs font-medium">Cargando datos operacionales del ticket...</span>
+            <span className="text-xs font-medium">Cargando datos operacionales del ticket corporativo...</span>
           </div>
         ) : errorMsg || !details ? (
           <div className="p-6 bg-rose-500/10 border border-rose-500/30 rounded-xl text-center space-y-2">
@@ -216,7 +216,7 @@ export function SelectedTicketDetailModal({
             {/* Header Badge Strip */}
             <div className="flex flex-wrap items-center justify-between gap-2 bg-[#0F172A] p-3.5 rounded-xl border border-[#334155]">
               <div>
-                <span className="text-[10px] text-slate-400 block font-semibold uppercase">Nº Ticket / Vale</span>
+                <span className="text-[10px] text-slate-400 block font-semibold uppercase">Ticket Corporativo Digital (TC)</span>
                 <span className="text-sm font-black text-[#FDDE12] font-mono">{details.ticket_code}</span>
               </div>
 
@@ -285,7 +285,9 @@ export function SelectedTicketDetailModal({
 
               <div>
                 <span className="text-[10px] text-slate-400 block font-semibold uppercase">Forma de Pago</span>
-                <span className="text-xs font-semibold text-slate-200">{details.payment_method}</span>
+                <span className="text-xs font-bold text-slate-200">
+                  {details.payment_method === 'Ticket' ? 'CRÉDITO CORPORATIVO' : (details.payment_method || 'EFECTIVO').toUpperCase()}
+                </span>
               </div>
 
               <div>

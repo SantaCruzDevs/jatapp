@@ -38,7 +38,8 @@ export async function POST(req: Request) {
     if (waCloudToken && waPhoneId) {
       try {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.motojat.com';
-        const publicUrl = `${appUrl}/t/${ticket.ticketCode}?token=${ticket.publicToken}`;
+        const displayCode = ticket.serviceCode || ticket.ticketCode;
+        const publicUrl = `${appUrl}/t/${ticket.rideCode}?token=${ticket.publicToken}`;
 
         const waEndpoint = `https://graph.facebook.com/v19.0/${waPhoneId}/messages`;
         const waPayload = {
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
           type: 'text',
           text: {
             preview_url: true,
-            body: `🏍️ *MOTOSERVI JUSTO A TIEMPO S.R.L.*\n*Comprobante Digital de Servicio*\n\nTicket: *#${ticket.ticketCode}*\nSolicitante: ${ticket.requester_person}\nImporte: *Bs. ${ticket.total_fare.toFixed(2)}*\n\nConsulte el ticket interactivo de verificación aquí:\n${publicUrl}`,
+            body: `🏍️ *MOTOSERVI JUSTO A TIEMPO S.R.L.*\n*Comprobante Digital de Servicio*\n\nComprobante: *#${displayCode}*${ticket.corporateTicketCode ? `\nTicket Corporativo: *#${ticket.corporateTicketCode}*` : ''}\nSolicitante: ${ticket.requester_person}\nImporte: *Bs. ${ticket.total_fare.toFixed(2)}*\n\nConsulte el comprobante interactivo de verificación aquí:\n${publicUrl}`,
           },
         };
 

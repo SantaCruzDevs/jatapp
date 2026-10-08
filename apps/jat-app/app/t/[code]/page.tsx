@@ -100,8 +100,8 @@ function PublicTicketPageContent({ code }: { code: string }) {
             </div>
 
             <div className="flex items-center justify-between border-b border-[#334155] pb-2">
-              <span className="text-slate-400">Comprobante Ticket:</span>
-              <span className="font-mono font-bold text-white">{payload.ticketCode}</span>
+              <span className="text-slate-400">Comprobante Digital:</span>
+              <span className="font-mono font-bold text-white">{payload.serviceCode || payload.ticketCode}</span>
             </div>
 
             <div className="flex items-center justify-between border-b border-[#334155] pb-2">
@@ -120,7 +120,9 @@ function PublicTicketPageContent({ code }: { code: string }) {
 
             <div className="flex items-center justify-between border-b border-[#334155] pb-2">
               <span className="text-slate-400">Forma de Pago:</span>
-              <span className="text-slate-200 font-medium">{payload.payment_method || 'Efectivo'}</span>
+              <span className="text-slate-200 font-bold">
+                {payload.payment_method === 'Ticket' ? 'CRÉDITO CORPORATIVO' : (payload.payment_method || 'EFECTIVO').toUpperCase()}
+              </span>
             </div>
 
             <div className="flex items-center justify-between pt-1 font-bold text-sm">

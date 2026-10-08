@@ -214,7 +214,7 @@ export default function TicketsPage() {
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Buscar ticket TK-..., JAT-..."
+                  placeholder="Buscar SJ-..., TC-..., JAT-..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full bg-[#0F172A] border border-[#334155] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FDDE12]"
@@ -243,7 +243,7 @@ export default function TicketsPage() {
                 <option value="all">Todas las formas de pago</option>
                 <option value="Efectivo">Efectivo</option>
                 <option value="QR">Pago QR</option>
-                <option value="Ticket">Ticket Corporativo</option>
+                <option value="Ticket">Crédito Corporativo (Ticket)</option>
               </select>
 
               <select
@@ -343,10 +343,15 @@ export default function TicketsPage() {
                               className="font-mono font-bold text-sky-400 hover:underline flex items-center gap-1.5"
                             >
                               <FileText className="w-3.5 h-3.5 text-sky-400" />
-                              <span>{t.ticketCode}</span>
+                              <span>{t.serviceCode || t.ticketCode}</span>
                             </Link>
-                            <div className="text-[10px] text-slate-400 font-mono">
-                              Carrera: {t.rideCode}
+                            {t.corporateTicketCode && (
+                              <div className="text-[10px] text-indigo-300 font-mono font-bold">
+                                Ticket: {t.corporateTicketCode}
+                              </div>
+                            )}
+                            <div className="text-[10px] text-slate-500 font-mono">
+                              Servicio: {t.rideCode}
                             </div>
                           </div>
                         </td>
@@ -391,8 +396,8 @@ export default function TicketsPage() {
                         </td>
 
                         <td className="py-3.5 px-4">
-                          <span className="px-2 py-0.5 bg-slate-800 border border-slate-700 text-slate-200 rounded font-medium text-[11px]">
-                            {t.payment_method || 'Efectivo'}
+                          <span className="px-2 py-0.5 bg-slate-800 border border-slate-700 text-slate-200 rounded font-bold text-[11px]">
+                            {t.payment_method === 'Ticket' ? 'CRÉDITO CORPORATIVO' : (t.payment_method || 'EFECTIVO').toUpperCase()}
                           </span>
                         </td>
 

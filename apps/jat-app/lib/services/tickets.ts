@@ -1,10 +1,13 @@
 import { createClient } from '@/lib/supabase/client';
 import { getJatOperationalWeek } from '@/lib/utils/date-helpers';
 import { Ride, RideStatus, PaymentMethod, SurchargeStatus } from '@/types/database.types';
+import { getOperationalCompanyContract } from './company-contracts';
 
 export interface DigitalTicket {
   id: string; // ride_id
+  serviceCode: string;
   ticketCode: string;
+  corporateTicketCode?: string | null;
   rideCode: string;
   publicToken: string;
   status: RideStatus;
@@ -36,6 +39,7 @@ export interface DigitalTicket {
 
 export interface PublicTicketPayload {
   rideCode: string;
+  serviceCode: string;
   ticketCode: string;
   status: RideStatus;
   created_at: string;
@@ -47,23 +51,42 @@ export interface PublicTicketPayload {
   payment_method: PaymentMethod | null;
   isValidated: boolean;
 }
+
 /**
- * Formats ticket code following MotoJAT standard rules:
- * - If rawTicketCode exists from DB (e.g. 'TK-2610-000002' or historical 'TK-JAT-2610-000002'), preserve it intact.
- * - Otherwise (virtual/fallback code for rideCode like 'JAT-2610-000002'), strip 'JAT-' and prepend 'TK-': 'TK-2610-000002'.
+ * Formats public service receipt code:
+ * Converts 'JAT-2610-000002' -> 'SJ-2610-000002'
  */
-export function formatTicketCode(rideCode: string, rawTicketCode?: string | null): string {
+export function formatServiceCode(rideCode: string): string {
+  const clean = rideCode ? rideCode.trim() : '';
+  if (clean.startsWith('SJ-')) return clean;
+  if (clean.startsWith('JAT-')) return `SJ-${clean.slice(4)}`;
+  return `SJ-${clean}`;
+}
+
+/**
+ * Formats corporate ticket code following MotoJAT TC- standard rules:
+ * - If rawTicketCode exists from DB (e.g. 'TC-2610-000002' or historical 'TK-2610-000002'), preserve it intact.
+ * - Otherwise (virtual/fallback code for rideCode like 'JAT-2610-000002'), strip 'JAT-' and prepend 'TC-': 'TC-2610-000002'.
+ */
+export function formatCorporateTicketCode(rideCode: string, rawTicketCode?: string | null): string {
   if (rawTicketCode && rawTicketCode.trim()) {
     return rawTicketCode.trim();
   }
   const cleanRideCode = rideCode ? rideCode.trim() : '';
   if (cleanRideCode.startsWith('JAT-')) {
-    return `TK-${cleanRideCode.slice(4)}`;
+    return `TC-${cleanRideCode.slice(4)}`;
   }
-  if (cleanRideCode.startsWith('TK-')) {
+  if (cleanRideCode.startsWith('TC-') || cleanRideCode.startsWith('TK-') || cleanRideCode.startsWith('VALE-')) {
     return cleanRideCode;
   }
-  return `TK-${cleanRideCode}`;
+  return `TC-${cleanRideCode}`;
+}
+
+/**
+ * Legacy wrapper for formatCorporateTicketCode
+ */
+export function formatTicketCode(rideCode: string, rawTicketCode?: string | null): string {
+  return formatCorporateTicketCode(rideCode, rawTicketCode);
 }
 
 /**
@@ -240,7 +263,9 @@ export async function getDigitalTickets(params?: {
   let result: DigitalTicket[] = (ridesData || []).map((r) => {
     const corp = corpMap.get(r.id);
     const token = generatePublicToken(r.id, r.ride_code, r.created_at);
-    const ticketCode = formatTicketCode(r.ride_code, corp?.ticket_code);
+    const serviceCode = formatServiceCode(r.ride_code);
+    const corporateTicketCode = formatCorporateTicketCode(r.ride_code, corp?.ticket_code);
+    const ticketCode = corporateTicketCode;
 
     let settlementStatus: 'COBRADO' | 'PENDIENTE DE LIQUIDACIÓN' | 'LIQUIDADO' | 'CANCELADO' = 'COBRADO';
     if (r.status === 'cancelled') {
@@ -257,7 +282,9 @@ export async function getDigitalTickets(params?: {
 
     return {
       id: r.id,
+      serviceCode,
       ticketCode,
+      corporateTicketCode: r.payment_method === 'Ticket' ? corporateTicketCode : null,
       rideCode: r.ride_code,
       publicToken: token,
       status: r.status as RideStatus,
@@ -313,11 +340,17 @@ export async function getDigitalTicketByCode(code: string): Promise<{ ticket: Di
   const cleanCode = code.trim();
 
   // Normalize search targets:
-  // cleanCode can be 'TK-2610-000002', 'TK-JAT-2610-000002', 'JAT-2610-000002', or '2610-000002'
+  // cleanCode can be 'SJ-2610-000002', 'TC-2610-000002', 'TK-2610-000002', 'TK-JAT-2610-000002', 'JAT-2610-000002', or '2610-000002'
   const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(cleanCode);
 
   let rideCodeTarget = cleanCode;
-  if (cleanCode.startsWith('TK-JAT-')) {
+  if (cleanCode.startsWith('SJ-')) {
+    const rest = cleanCode.slice(3);
+    rideCodeTarget = rest.startsWith('JAT-') ? rest : `JAT-${rest}`;
+  } else if (cleanCode.startsWith('TC-')) {
+    const rest = cleanCode.slice(3);
+    rideCodeTarget = rest.startsWith('JAT-') ? rest : `JAT-${rest}`;
+  } else if (cleanCode.startsWith('TK-JAT-')) {
     rideCodeTarget = `JAT-${cleanCode.slice(7)}`;
   } else if (cleanCode.startsWith('TK-')) {
     const rest = cleanCode.slice(3);
@@ -374,7 +407,7 @@ export async function getDigitalTicketByCode(code: string): Promise<{ ticket: Di
     const { data: corp } = await supabase
       .from('corporate_tickets')
       .select('*')
-      .or(`ticket_code.eq.${cleanCode},ticket_code.eq.TK-${numericPart},ticket_code.eq.TK-JAT-${numericPart},ticket_code.eq.TK-${rideCodeTarget}`)
+      .or(`ticket_code.eq.${cleanCode},ticket_code.eq.TC-${numericPart},ticket_code.eq.TK-${numericPart},ticket_code.eq.TK-JAT-${numericPart},ticket_code.eq.VALE-${numericPart}`)
       .maybeSingle();
 
     if (corp) {
@@ -397,11 +430,13 @@ export async function getDigitalTicketByCode(code: string): Promise<{ ticket: Di
   }
 
   if (!ride) {
-    return { ticket: null, error: new Error('Ticket no encontrado o código de comprobante inválido.') };
+    return { ticket: null, error: new Error('Comprobante o ticket no encontrado.') };
   }
 
   const token = generatePublicToken(ride.id, ride.ride_code, ride.created_at);
-  const ticketCode = formatTicketCode(ride.ride_code, corpRecord?.ticket_code);
+  const serviceCode = formatServiceCode(ride.ride_code);
+  const corporateTicketCode = formatCorporateTicketCode(ride.ride_code, corpRecord?.ticket_code);
+  const ticketCode = corporateTicketCode;
 
   let settlementStatus: 'COBRADO' | 'PENDIENTE DE LIQUIDACIÓN' | 'LIQUIDADO' | 'CANCELADO' = 'COBRADO';
   if (ride.status === 'cancelled') {
@@ -418,7 +453,9 @@ export async function getDigitalTicketByCode(code: string): Promise<{ ticket: Di
 
   const ticket: DigitalTicket = {
     id: ride.id,
+    serviceCode,
     ticketCode,
+    corporateTicketCode: ride.payment_method === 'Ticket' ? corporateTicketCode : null,
     rideCode: ride.ride_code,
     publicToken: token,
     status: ride.status as RideStatus,
@@ -471,6 +508,7 @@ export async function getPublicVerificationTicket(
 
   const payload: PublicTicketPayload = {
     rideCode: ticket.rideCode,
+    serviceCode: ticket.serviceCode,
     ticketCode: ticket.ticketCode,
     status: ticket.status,
     created_at: ticket.created_at,
@@ -484,4 +522,42 @@ export async function getPublicVerificationTicket(
   };
 
   return { payload, error: null };
+}
+
+/**
+ * Evaluates whether a ride's client/company is eligible for corporate ticket credit payment.
+ */
+export async function isRideTicketEligible(ride: {
+  company_id?: string | null;
+  customer_id?: string | null;
+}): Promise<boolean> {
+  if (!ride.company_id && !ride.customer_id) return false;
+
+  const supabase = createClient();
+
+  if (ride.company_id) {
+    const { data: company } = await supabase
+      .from('companies')
+      .select('uses_ticket_contract')
+      .eq('id', ride.company_id)
+      .single();
+
+    if (!company || !company.uses_ticket_contract) return false;
+
+    // Operational contract check
+    const contract = await getOperationalCompanyContract(ride.company_id);
+    return !!contract;
+  }
+
+  if (ride.customer_id) {
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('uses_ticket_contract, is_active')
+      .eq('id', ride.customer_id)
+      .single();
+
+    return !!(customer && customer.uses_ticket_contract && customer.is_active !== false);
+  }
+
+  return false;
 }

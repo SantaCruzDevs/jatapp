@@ -152,8 +152,8 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
             {/* Receipt Header */}
             <div className="text-center border-b-2 border-dashed border-slate-300 pb-3 space-y-1">
               <h1 className="text-2xl font-black font-heading tracking-wide text-slate-900">MotoJat</h1>
-              <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">TICKET DIGITAL DE ENVÍO</p>
-              <p className="text-xs font-extrabold text-slate-800">Nro: {ticket.ticketCode}</p>
+              <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">COMPROBANTE DIGITAL DE SERVICIO</p>
+              <p className="text-xs font-extrabold text-slate-800">Nro: {ticket.serviceCode}</p>
             </div>
 
             {/* Prominent Conductor MotoJAT & Vehicle Fleet Section (CEO Priority view at Top) */}
@@ -227,8 +227,16 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
               )}
               <div className="flex justify-between">
                 <span className="text-slate-600">Forma de Pago:</span>
-                <span className="font-bold text-slate-900">{ticket.payment_method || 'Efectivo'}</span>
+                <span className="font-bold text-slate-900">
+                  {ticket.payment_method === 'Ticket' ? 'CRÉDITO CORPORATIVO' : (ticket.payment_method || 'Efectivo').toUpperCase()}
+                </span>
               </div>
+              {ticket.payment_method === 'Ticket' && ticket.corporateTicketCode && (
+                <div className="flex justify-between text-[#0F172A] font-bold bg-amber-50 p-1.5 rounded border border-amber-200">
+                  <span>Ticket Corporativo:</span>
+                  <span className="font-mono">{ticket.corporateTicketCode}</span>
+                </div>
+              )}
               <div className="flex justify-between items-center pt-2 text-sm sm:text-base font-extrabold text-slate-900 border-t border-slate-400">
                 <span>TARIFA FINAL:</span>
                 <span className="text-emerald-700">Bs. {ticket.total_fare.toFixed(2)}</span>
@@ -262,12 +270,12 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
                     MOTOSERVI JUSTO A TIEMPO S.R.L.
                   </h1>
                   <p className="text-xs text-[#FDDE12] font-mono print:text-slate-700">
-                    TICKET DIGITAL DE SERVICIO DE MENSAJERÍA & CARGO
+                    COMPROBANTE DIGITAL DE SERVICIO DE MENSAJERÍA & CARGO
                   </p>
                 </div>
                 <div className="text-right">
                   <span className="inline-block px-3 py-1 bg-slate-800 text-[#FDDE12] border border-slate-700 rounded-lg text-xs font-mono font-bold print:bg-slate-100 print:text-black print:border-slate-300">
-                    {ticket.ticketCode}
+                    {ticket.serviceCode}
                   </span>
                 </div>
               </div>
@@ -410,8 +418,16 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
                 )}
                 <div className="flex justify-between text-slate-700 pt-1 border-t border-slate-200">
                   <span>Forma de Pago:</span>
-                  <span className="font-bold text-slate-900">{ticket.payment_method || 'Efectivo'}</span>
+                  <span className="font-bold text-slate-900">
+                    {ticket.payment_method === 'Ticket' ? 'CRÉDITO CORPORATIVO' : (ticket.payment_method || 'Efectivo').toUpperCase()}
+                  </span>
                 </div>
+                {ticket.payment_method === 'Ticket' && ticket.corporateTicketCode && (
+                  <div className="flex justify-between text-slate-900 bg-amber-50 p-2 rounded-lg border border-amber-200 font-bold">
+                    <span>Ticket Corporativo Digital:</span>
+                    <span className="font-mono text-amber-900">{ticket.corporateTicketCode}</span>
+                  </div>
+                )}
                 {ticket.observations && (
                   <div className="flex justify-between text-slate-700">
                     <span>Observaciones:</span>

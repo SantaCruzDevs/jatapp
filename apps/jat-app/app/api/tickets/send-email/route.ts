@@ -38,25 +38,27 @@ export async function POST(req: Request) {
     if (resendApiKey) {
       try {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.motojat.com';
-        const publicUrl = `${appUrl}/t/${ticket.ticketCode}?token=${ticket.publicToken}`;
+        const displayCode = ticket.serviceCode || ticket.ticketCode;
+        const publicUrl = `${appUrl}/t/${ticket.rideCode}?token=${ticket.publicToken}`;
 
         const htmlContent = `
           <div style="font-family: Arial, sans-serif; background-color: #0F172A; color: #FFFFFF; padding: 24px; border-radius: 12px;">
             <h2 style="color: #FDDE12; margin-bottom: 4px;">MOTOSERVI JUSTO A TIEMPO S.R.L.</h2>
-            <p style="color: #94A3B8; font-size: 14px; margin-top: 0;">COMPROBANTE DIGITAL DE SERVICIO CORPORATIVO</p>
+            <p style="color: #94A3B8; font-size: 14px; margin-top: 0;">COMPROBANTE DIGITAL DE SERVICIO</p>
 
             <div style="background-color: #1E293B; border: 1px solid #334155; padding: 16px; border-radius: 8px; margin: 16px 0;">
-              <p><strong>Código Ticket:</strong> <span style="font-family: monospace; color: #FDDE12;">${ticket.ticketCode}</span></p>
+              <p><strong>Comprobante:</strong> <span style="font-family: monospace; color: #FDDE12;">${displayCode}</span></p>
+              ${ticket.corporateTicketCode ? `<p><strong>Ticket Corporativo:</strong> <span style="font-family: monospace; color: #818CF8;">${ticket.corporateTicketCode}</span></p>` : ''}
               <p><strong>Solicitante:</strong> ${ticket.requester_person} (${ticket.requester_company})</p>
               <p><strong>Origen:</strong> ${ticket.pickup_address}</p>
               <p><strong>Destino:</strong> ${ticket.destination_address}</p>
               <p><strong>Importe Total:</strong> <strong style="font-size: 18px; color: #10B981;">Bs. ${ticket.total_fare.toFixed(2)}</strong></p>
-              <p><strong>Método de Pago:</strong> ${ticket.payment_method || 'Efectivo'}</p>
+              <p><strong>Forma de Pago:</strong> ${ticket.payment_method === 'Ticket' ? 'CRÉDITO CORPORATIVO' : (ticket.payment_method || 'EFECTIVO').toUpperCase()}</p>
             </div>
 
             <p style="text-align: center; margin-top: 24px;">
               <a href="${publicUrl}" style="background-color: #FDDE12; color: #0F172A; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 8px; display: inline-block;">
-                Ver Ticket Digital de Verificación
+                Ver Comprobante Digital de Verificación
               </a>
             </p>
           </div>
@@ -69,9 +71,9 @@ export async function POST(req: Request) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: `MotoJAT Tickets <${fromEmail}>`,
+            from: `MotoJAT Comprobantes <${fromEmail}>`,
             to: [targetEmail],
-            subject: `Comprobante Digital de Servicio - Ticket #${ticket.ticketCode}`,
+            subject: `Comprobante Digital de Servicio - #${displayCode}`,
             html: htmlContent,
           }),
         });

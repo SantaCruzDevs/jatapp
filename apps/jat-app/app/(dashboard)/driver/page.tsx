@@ -6,6 +6,7 @@ import { getCurrentUserProfileClient } from '@/lib/services/auth';
 import { getDriverByProfileId, DriverWithProfile } from '@/lib/services/drivers';
 import { getDriverCashSummary, DriverCashSummary } from '@/lib/services/driver-settlements';
 import { getRides, requestSurcharge, updateRideStatus, RideWithDetails } from '@/lib/services/rides';
+import { isRideTicketEligible } from '@/lib/services/tickets';
 import { createClient } from '@/lib/supabase/client';
 import { PaymentMethod } from '@/types/database.types';
 import { 
@@ -45,6 +46,7 @@ export default function DriverPage() {
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState<boolean>(false);
   const [rideToComplete, setRideToComplete] = useState<RideWithDetails | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('Efectivo');
+  const [isTicketEligible, setIsTicketEligible] = useState<boolean>(true);
   const [isSubmittingCompletion, setIsSubmittingCompletion] = useState<boolean>(false);
 
   const loadDriverData = useCallback(async (isSilent = false) => {
@@ -277,7 +279,7 @@ export default function DriverPage() {
   };
 
   // Open Completion Modal
-  const handleOpenCompleteModal = (ride: RideWithDetails) => {
+  const handleOpenCompleteModal = async (ride: RideWithDetails) => {
     if (ride.surcharge_status === 'pending') {
       setErrorMsg(
         'Existe un sobrecargo pendiente de aprobación. El operador debe aprobar o rechazar antes de finalizar.'
@@ -285,7 +287,9 @@ export default function DriverPage() {
       return;
     }
     setRideToComplete(ride);
-    setSelectedPaymentMethod('Ticket');
+    const eligible = await isRideTicketEligible(ride);
+    setIsTicketEligible(eligible);
+    setSelectedPaymentMethod(eligible ? 'Ticket' : 'Efectivo');
     setIsCompleteModalOpen(true);
   };
 
@@ -795,7 +799,7 @@ export default function DriverPage() {
                   <span>FORMA DE PAGO (OBLIGATORIO) <span className="text-rose-400">*</span></span>
                 </label>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className={`grid ${isTicketEligible ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
                   <button
                     type="button"
                     onClick={() => setSelectedPaymentMethod('Efectivo')}
@@ -822,18 +826,20 @@ export default function DriverPage() {
                     <span>PAGO QR</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPaymentMethod('Ticket')}
-                    className={`py-3.5 px-2 rounded-xl border text-center font-black text-xs transition-all flex flex-col items-center gap-1 ${
-                      selectedPaymentMethod === 'Ticket'
-                        ? 'bg-indigo-500 text-white border-indigo-400 shadow-lg ring-2 ring-indigo-400/50'
-                        : 'bg-[#0F172A] text-slate-300 border-[#334155] hover:border-slate-500'
-                    }`}
-                  >
-                    <FileText className="w-5 h-5" />
-                    <span>TICKET</span>
-                  </button>
+                  {isTicketEligible && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPaymentMethod('Ticket')}
+                      className={`py-3.5 px-2 rounded-xl border text-center font-black text-xs transition-all flex flex-col items-center gap-1 ${
+                        selectedPaymentMethod === 'Ticket'
+                          ? 'bg-indigo-500 text-white border-indigo-400 shadow-lg ring-2 ring-indigo-400/50'
+                          : 'bg-[#0F172A] text-slate-300 border-[#334155] hover:border-slate-500'
+                      }`}
+                    >
+                      <FileText className="w-5 h-5" />
+                      <span>TICKET CORPORATIVO</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
