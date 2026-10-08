@@ -48,7 +48,7 @@ export async function POST(req: Request) {
           type: 'text',
           text: {
             preview_url: true,
-            body: `🏍️ *MOTOSERVI JUSTO A TIEMPO S.R.L.*\n*Comprobante Digital de Servicio*\n\nComprobante: *#${displayCode}*${ticket.corporateTicketCode ? `\nTicket Corporativo: *#${ticket.corporateTicketCode}*` : ''}\nSolicitante: ${ticket.requester_person}\nImporte: *Bs. ${ticket.total_fare.toFixed(2)}*\n\nConsulte el comprobante interactivo de verificación aquí:\n${publicUrl}`,
+            body: `🏍️ *MOTOSERVI JUSTO A TIEMPO S.R.L.*\n*Comprobante Digital de Servicio*\n\nComprobante: *#${displayCode}*\nSolicitante: ${ticket.requester_person}\nImporte: *Bs. ${ticket.total_fare.toFixed(2)}*\n\nConsulte el comprobante interactivo de verificación aquí:\n${publicUrl}`,
           },
         };
 

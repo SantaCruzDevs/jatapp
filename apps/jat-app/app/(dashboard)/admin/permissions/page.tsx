@@ -217,6 +217,7 @@ export default function PermissionsAdminPage() {
                       className="w-full bg-[#0F172A] border border-[#334155] text-slate-100 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#FDDE12] cursor-pointer"
                     >
                       <option value="financial_balances.view">financial_balances.view (Vista Balances Financieros)</option>
+                      <option value="tickets.cancel">tickets.cancel (Anulación de Comprobantes)</option>
                       <option value="CUSTOM">Otro permiso personalizado...</option>
                     </select>
                   </div>

@@ -35,6 +35,9 @@ export interface DigitalTicket {
   cargo_description?: string | null;
   corporate_ticket_id?: string | null;
   corporate_ticket_status?: string | null;
+  cancelled_at?: string | null;
+  cancelled_by?: string | null;
+  cancellation_reason?: string | null;
 }
 
 export interface PublicTicketPayload {
@@ -50,36 +53,39 @@ export interface PublicTicketPayload {
   total_fare: number;
   payment_method: PaymentMethod | null;
   isValidated: boolean;
+  cancelled_at?: string | null;
+  cancellation_reason?: string | null;
 }
 
 /**
  * Formats public service receipt code:
+ * Returns rideCode directly if it already starts with SJ- or TK-.
  * Converts 'JAT-2610-000002' -> 'SJ-2610-000002'
  */
 export function formatServiceCode(rideCode: string): string {
   const clean = rideCode ? rideCode.trim() : '';
-  if (clean.startsWith('SJ-')) return clean;
+  if (clean.startsWith('SJ-') || clean.startsWith('TK-')) return clean;
   if (clean.startsWith('JAT-')) return `SJ-${clean.slice(4)}`;
-  return `SJ-${clean}`;
+  return clean || 'SJ-0000-000000';
 }
 
 /**
- * Formats corporate ticket code following MotoJAT TC- standard rules:
- * - If rawTicketCode exists from DB (e.g. 'TC-2610-000002' or historical 'TK-2610-000002'), preserve it intact.
- * - Otherwise (virtual/fallback code for rideCode like 'JAT-2610-000002'), strip 'JAT-' and prepend 'TC-': 'TC-2610-000002'.
+ * Formats corporate ticket code following MotoJAT TK- standard rules:
+ * - If rawTicketCode exists from DB, preserve it intact.
+ * - Otherwise return clean rideCode or format TK- from legacy JAT-.
  */
 export function formatCorporateTicketCode(rideCode: string, rawTicketCode?: string | null): string {
   if (rawTicketCode && rawTicketCode.trim()) {
     return rawTicketCode.trim();
   }
   const cleanRideCode = rideCode ? rideCode.trim() : '';
-  if (cleanRideCode.startsWith('JAT-')) {
-    return `TC-${cleanRideCode.slice(4)}`;
-  }
-  if (cleanRideCode.startsWith('TC-') || cleanRideCode.startsWith('TK-') || cleanRideCode.startsWith('VALE-')) {
+  if (cleanRideCode.startsWith('TK-') || cleanRideCode.startsWith('SJ-') || cleanRideCode.startsWith('TC-') || cleanRideCode.startsWith('VALE-')) {
     return cleanRideCode;
   }
-  return `TC-${cleanRideCode}`;
+  if (cleanRideCode.startsWith('JAT-')) {
+    return `TK-${cleanRideCode.slice(4)}`;
+  }
+  return cleanRideCode || 'TK-0000-000000';
 }
 
 /**
@@ -560,4 +566,28 @@ export async function isRideTicketEligible(ride: {
   }
 
   return false;
+}
+
+/**
+ * Executes atomic annullation of a digital ticket/ride via cancel_digital_ticket_atomic RPC.
+ */
+export async function cancelDigitalTicket(
+  rideId: string,
+  cancellationReason: string
+): Promise<{ success: boolean; error: Error | null }> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc('cancel_digital_ticket_atomic', {
+    p_ride_id: rideId,
+    p_cancellation_reason: cancellationReason,
+  });
+
+  if (error) {
+    return { success: false, error: new Error(error.message) };
+  }
+
+  if (data && typeof data === 'object' && 'success' in data && (data as any).success === false) {
+    return { success: false, error: new Error((data as any).error) };
+  }
+
+  return { success: true, error: null };
 }

@@ -419,15 +419,9 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
                 <div className="flex justify-between text-slate-700 pt-1 border-t border-slate-200">
                   <span>Forma de Pago:</span>
                   <span className="font-bold text-slate-900">
-                    {ticket.payment_method === 'Ticket' ? 'CRÉDITO CORPORATIVO' : (ticket.payment_method || 'Efectivo').toUpperCase()}
+                    {ticket.payment_method === 'Ticket' ? 'TICKET DIGITAL' : (ticket.payment_method || 'Efectivo').toUpperCase()}
                   </span>
                 </div>
-                {ticket.payment_method === 'Ticket' && ticket.corporateTicketCode && (
-                  <div className="flex justify-between text-slate-900 bg-amber-50 p-2 rounded-lg border border-amber-200 font-bold">
-                    <span>Ticket Corporativo Digital:</span>
-                    <span className="font-mono text-amber-900">{ticket.corporateTicketCode}</span>
-                  </div>
-                )}
                 {ticket.observations && (
                   <div className="flex justify-between text-slate-700">
                     <span>Observaciones:</span>

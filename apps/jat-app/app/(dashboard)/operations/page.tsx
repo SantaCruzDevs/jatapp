@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Topbar from '@/components/layout/Topbar';
 import { getRides, createRide, assignDriverToRide, updateRideStatus, approveSurcharge, rejectSurcharge, RideWithDetails } from '@/lib/services/rides';
-import { isRideTicketEligible } from '@/lib/services/tickets';
+import { isRideTicketEligible, cancelDigitalTicket } from '@/lib/services/tickets';
+import { getUserPermissions } from '@/lib/services/permissions';
 import { findCustomerByPhone, createCustomer, CustomerWithCompany, searchUnifiedRequesters, UnifiedRequesterItem } from '@/lib/services/customers';
 import { getDrivers, DriverWithProfile } from '@/lib/services/drivers';
 import { getCompanies } from '@/lib/services/companies';
@@ -111,6 +112,11 @@ export default function OperationsPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
   const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
+  const [hasCancelPermission, setHasCancelPermission] = useState<boolean>(false);
+  const [isAnnullationModalOpen, setIsAnnullationModalOpen] = useState(false);
+  const [rideToAnnul, setRideToAnnul] = useState<RideWithDetails | null>(null);
+  const [annullationReason, setAnnullationReason] = useState('');
+  const [isSubmittingAnnullation, setIsSubmittingAnnullation] = useState(false);
 
   const [selectedRideTimeline, setSelectedRideTimeline] = useState<RideTimelineWithActor[]>([]);
   const [loadingTimeline, setLoadingTimeline] = useState(false);
@@ -154,6 +160,45 @@ export default function OperationsPage() {
       setErrorMsg((err as Error).message);
     } finally {
       setIsSubmittingCancel(false);
+    }
+  };
+
+  // Annullation Modal Handlers (Formal Ticket Invalidation)
+  const handleOpenAnnullationModal = (ride: RideWithDetails) => {
+    setErrorMsg(null);
+    setRideToAnnul(ride);
+    setAnnullationReason('');
+    setIsAnnullationModalOpen(true);
+  };
+
+  const handleConfirmAnnullationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rideToAnnul) return;
+    if (!annullationReason.trim()) {
+      setErrorMsg('El motivo de anulación es obligatorio.');
+      return;
+    }
+
+    setIsSubmittingAnnullation(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const { success, error } = await cancelDigitalTicket(rideToAnnul.id, annullationReason.trim());
+      if (error || !success) {
+        setErrorMsg(error?.message || 'Error al anular el comprobante.');
+      } else {
+        setSuccessMsg(`Comprobante ${rideToAnnul.ride_code} ANULADO exitosamente.`);
+        setIsAnnullationModalOpen(false);
+        setIsDetailModalOpen(false);
+        setRideToAnnul(null);
+        setAnnullationReason('');
+        await loadData(true);
+      }
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message);
+    } finally {
+      setIsSubmittingAnnullation(false);
     }
   };
 
@@ -289,6 +334,14 @@ export default function OperationsPage() {
             .eq('id', authData.data.user.id)
             .single();
           if (prof?.role) setCurrentUserRole(prof.role);
+
+          try {
+            const perms = await getUserPermissions(authData.data.user.id);
+            const canCancel = perms.some((p) => p.permission_key === 'tickets.cancel');
+            setHasCancelPermission(canCancel);
+          } catch (permErr) {
+            console.warn('Error fetching permissions:', permErr);
+          }
         }
       } catch (networkErr) {
         console.warn('Network unavailable during loadData, falling back to IndexedDB local cache:', networkErr);
@@ -2217,6 +2270,18 @@ export default function OperationsPage() {
                     </button>
                   </>
                 )}
+
+                {selectedRideForDetail.status === 'completed' &&
+                  !['DRIVER', 'CLIENT_USER'].includes((currentUserRole || '').toUpperCase()) &&
+                  (['SUPERADMIN', 'ADMIN'].includes((currentUserRole || '').toUpperCase()) || hasCancelPermission) && (
+                    <button
+                      onClick={() => handleOpenAnnullationModal(selectedRideForDetail)}
+                      className="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors"
+                    >
+                      <Ban className="w-3.5 h-3.5" />
+                      <span>Anular Comprobante</span>
+                    </button>
+                )}
               </div>
             </div>
           </div>
@@ -2527,6 +2592,124 @@ export default function OperationsPage() {
                 >
                   {isSubmittingCompletion && <Loader2 className="w-4 h-4 animate-spin" />}
                   <span>Confirmar Finalización</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 7: ANULACIÓN CONTROLADA DE COMPROBANTES */}
+      {isAnnullationModalOpen && rideToAnnul && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-[#1E293B] border border-[#334155] rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-5 animate-scaleUp">
+            <div className="flex items-center justify-between pb-3 border-b border-[#334155]">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-xl">
+                  <Ban className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white font-heading">
+                    Anular Comprobante Digital
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Mecanismo formal de invalidación transaccional
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsAnnullationModalOpen(false);
+                  setRideToAnnul(null);
+                  setErrorMsg(null);
+                }}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-[#0F172A]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {errorMsg && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                  <span className="font-medium">{errorMsg}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setErrorMsg(null)}
+                  className="text-rose-400 hover:text-white p-0.5"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Resumen de Comprobante a Anular */}
+            <div className="bg-[#0F172A] border border-[#334155] rounded-xl p-4 space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Comprobante:</span>
+                <span className="font-mono font-bold text-rose-400">{rideToAnnul.ride_code}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Cliente:</span>
+                <span className="font-semibold text-white">
+                  {rideToAnnul.requester_person} ({rideToAnnul.requester_company})
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Forma de Pago:</span>
+                <span className="font-bold text-slate-200">{(rideToAnnul.payment_method || 'Efectivo').toUpperCase()}</span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-[#334155]">
+                <span className="font-bold text-slate-300">Importe Total:</span>
+                <span className="font-bold text-[#FDDE12] font-mono text-base">
+                  Bs. {Number(rideToAnnul.total_fare).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+              <span>
+                Esta acción no se puede deshacer. El número del comprobante quedará anulado y no podrá reutilizarse.
+              </span>
+            </div>
+
+            <form onSubmit={handleConfirmAnnullationSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Motivo de Anulación <span className="text-rose-400">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={annullationReason}
+                  onChange={(e) => setAnnullationReason(e.target.value)}
+                  placeholder="Ej. Forma de pago incorrecta, registrado por error..."
+                  className="w-full bg-[#0F172A] border border-[#334155] rounded-xl p-3 text-white text-xs focus:outline-none focus:border-rose-400"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#334155]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAnnullationModalOpen(false);
+                    setRideToAnnul(null);
+                    setErrorMsg(null);
+                  }}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition-colors text-xs"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingAnnullation}
+                  className="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 text-xs disabled:opacity-50"
+                >
+                  {isSubmittingAnnullation && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>Anular Comprobante</span>
                 </button>
               </div>
             </form>

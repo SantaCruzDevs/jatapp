@@ -48,12 +48,11 @@ export async function POST(req: Request) {
 
             <div style="background-color: #1E293B; border: 1px solid #334155; padding: 16px; border-radius: 8px; margin: 16px 0;">
               <p><strong>Comprobante:</strong> <span style="font-family: monospace; color: #FDDE12;">${displayCode}</span></p>
-              ${ticket.corporateTicketCode ? `<p><strong>Ticket Corporativo:</strong> <span style="font-family: monospace; color: #818CF8;">${ticket.corporateTicketCode}</span></p>` : ''}
               <p><strong>Solicitante:</strong> ${ticket.requester_person} (${ticket.requester_company})</p>
               <p><strong>Origen:</strong> ${ticket.pickup_address}</p>
               <p><strong>Destino:</strong> ${ticket.destination_address}</p>
               <p><strong>Importe Total:</strong> <strong style="font-size: 18px; color: #10B981;">Bs. ${ticket.total_fare.toFixed(2)}</strong></p>
-              <p><strong>Forma de Pago:</strong> ${ticket.payment_method === 'Ticket' ? 'CRÉDITO CORPORATIVO' : (ticket.payment_method || 'EFECTIVO').toUpperCase()}</p>
+              <p><strong>Forma de Pago:</strong> ${ticket.payment_method === 'Ticket' ? 'TICKET DIGITAL' : (ticket.payment_method || 'EFECTIVO').toUpperCase()}</p>
             </div>
 
             <p style="text-align: center; margin-top: 24px;">
