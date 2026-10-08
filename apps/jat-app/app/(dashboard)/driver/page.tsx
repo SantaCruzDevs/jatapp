@@ -609,15 +609,26 @@ export default function DriverPage() {
               </div>
             )}
 
-            {/* PRÓXIMAS CARRERAS EN COLA */}
+            {/* CARRERA EN ESPERA (PREASIGNADA) */}
             {queuedRides.length > 0 && (
-              <div className="bg-[#1E293B] rounded-2xl border border-[#334155] p-5 space-y-4 shadow-xl">
+              <div className="bg-[#1E293B] rounded-2xl border-2 border-amber-500/40 p-5 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between border-b border-[#334155] pb-3">
-                  <h3 className="font-bold text-sm text-white flex items-center gap-2 font-heading">
-                    <Clock className="w-4 h-4 text-sky-400" />
-                    <span>PRÓXIMAS CARRERAS EN COLA ({queuedRides.length})</span>
-                  </h3>
-                  <span className="text-[10px] text-slate-400">Ordenadas por horario de asignación</span>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-amber-400 animate-pulse" />
+                    <h3 className="font-bold text-sm text-amber-300 uppercase tracking-wider font-heading">
+                      {queuedRides.length === 1 ? 'CARRERA EN ESPERA (PREASIGNADA)' : `CARRERAS EN ESPERA (${queuedRides.length})`}
+                    </h3>
+                  </div>
+                  <span className="px-2.5 py-1 bg-amber-500/10 text-amber-300 border border-amber-500/30 text-[10px] font-bold rounded-lg">
+                    EN ESPERA
+                  </span>
+                </div>
+
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-200 text-xs flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                  <span>
+                    <strong>Carrera preasignada:</strong> Quedará lista para iniciar una vez concluyas tu carrera actual.
+                  </span>
                 </div>
 
                 <div className="space-y-3">
@@ -627,7 +638,7 @@ export default function DriverPage() {
                       className="p-4 bg-[#0F172A] border border-[#334155] rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-slate-800 text-sky-400 font-black flex items-center justify-center text-xs">
+                        <div className="w-8 h-8 rounded-lg bg-slate-800 text-amber-400 font-black flex items-center justify-center text-xs border border-amber-500/30">
                           #{idx + 1}
                         </div>
                         <div>

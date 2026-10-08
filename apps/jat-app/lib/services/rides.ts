@@ -210,66 +210,29 @@ export async function createRide(params: {
 }
 
 /**
- * Assigns a driver to a pending ride, updates ride status to 'assigned', and logs timeline audit.
+ * Assigns a driver to a pending ride, updates ride status to 'assigned', and logs timeline audit atomically.
  */
 export async function assignDriverToRide(
   rideId: string,
   driverId: string,
-  driverMovil?: number
+  _driverMovil?: number
 ): Promise<{ error: Error | null }> {
   const supabase = createClient();
 
-  const { data: authData } = await supabase.auth.getUser();
-  const userId = authData.user?.id || null;
-
-  // 1. Fetch current ride state
-  const { data: currentRide, error: fetchErr } = await supabase
-    .from('rides')
-    .select('status, ride_code')
-    .eq('id', rideId)
-    .single();
-
-  if (fetchErr || !currentRide) {
-    return { error: new Error('La carrera especificada no existe.') };
-  }
-
-  if (currentRide.status !== 'pending') {
-    return { error: new Error(`No se puede asignar conductor a una carrera en estado '${currentRide.status.toUpperCase()}'. Debe estar PENDING.`) };
-  }
-
-  // 2. Concurrency-safe atomic update
-  const { data: updatedData, error: updateErr } = await supabase
-    .from('rides')
-    .update({
-      driver_id: driverId,
-      status: 'assigned',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', rideId)
-    .eq('status', 'pending')
-    .select();
-
-  if (updateErr) {
-    console.error('Error assigning driver to ride:', updateErr);
-    return { error: new Error(updateErr.message) };
-  }
-
-  if (!updatedData || updatedData.length === 0) {
-    return { error: new Error('Conflicto de concurrencia: Esta carrera ya fue asignada o modificada por otro usuario.') };
-  }
-
-  // 3. Mark driver status as busy
-  await updateDriverStatus(driverId, 'busy');
-
-  // 4. Log timeline event
-  await addTimelineEvent({
-    ride_id: rideId,
-    status_from: 'pending',
-    status_to: 'assigned',
-    event_title: 'Motoquero Asignado',
-    event_description: driverMovil ? `Asignado a Móvil #${driverMovil}` : 'Motoquero asignado a la carrera',
-    actor_id: userId,
+  const { data, error: rpcErr } = await supabase.rpc('assign_ride_driver_atomic', {
+    p_ride_id: rideId,
+    p_driver_id: driverId,
   });
+
+  if (rpcErr) {
+    console.error('Error in assign_ride_driver_atomic RPC:', rpcErr);
+    return { error: new Error(rpcErr.message) };
+  }
+
+  const result = data as { success: boolean; error?: string; message?: string };
+  if (!result || !result.success) {
+    return { error: new Error(result?.error || 'No se pudo asignar la carrera.') };
+  }
 
   return { error: null };
 }

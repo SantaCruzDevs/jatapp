@@ -101,6 +101,7 @@ export default function OperationsPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isCompletionModalOpen, setIsCompletionModalOpen] = useState(false);
+  const [driverSearchQuery, setDriverSearchQuery] = useState('');
 
   // Active Selection for Modals
   const [selectedRideForAssign, setSelectedRideForAssign] = useState<RideWithDetails | null>(null);
@@ -936,6 +937,7 @@ export default function OperationsPage() {
   // Driver Assignment Action
   const handleOpenAssignModal = (r: RideWithDetails) => {
     setSelectedRideForAssign(r);
+    setDriverSearchQuery('');
     setIsAssignModalOpen(true);
   };
 
@@ -2018,7 +2020,7 @@ export default function OperationsPage() {
       {/* MODAL 2: ASIGNACIÓN DE MOTOQUERO */}
       {isAssignModalOpen && selectedRideForAssign && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1E293B] border border-[#334155] rounded-2xl w-full max-w-xl p-6 shadow-2xl space-y-4 animate-scaleUp max-h-[85vh] overflow-y-auto">
+          <div className="bg-[#1E293B] border border-[#334155] rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4 animate-scaleUp max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-[#334155]">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-sky-500/10 border border-sky-500/30 text-sky-400 rounded-xl">
@@ -2026,7 +2028,7 @@ export default function OperationsPage() {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-white font-heading">
-                    Asignar Motoquero — Carrera {selectedRideForAssign.ride_code}
+                    Asignar / Preasignar Motoquero — Carrera {selectedRideForAssign.ride_code}
                   </h3>
                   <p className="text-xs text-slate-400">
                     Solicitante: <strong className="text-slate-200">{selectedRideForAssign.requester_person}</strong> ({selectedRideForAssign.requester_company})
@@ -2041,52 +2043,156 @@ export default function OperationsPage() {
               </button>
             </div>
 
+            {/* Smart Search Bar */}
             <div className="space-y-3">
-              <p className="text-xs text-slate-300 font-medium">Conductores de la flota MotoJAT disponibles:</p>
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  placeholder="Buscar por móvil o nombre..."
+                  value={driverSearchQuery}
+                  onChange={(e) => setDriverSearchQuery(e.target.value)}
+                  className="w-full bg-[#0F172A] border border-[#334155] rounded-xl pl-10 pr-10 py-2.5 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-sky-400"
+                />
+                {driverSearchQuery && (
+                  <button
+                    onClick={() => setDriverSearchQuery('')}
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-white p-0.5 rounded"
+                    title="Limpiar búsqueda"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>Flota MotoJAT:</span>
+                <span>
+                  Regla de carga: <strong className="text-white">Max 1 en curso + Max 1 en espera (Total 2)</strong>
+                </span>
+              </div>
 
               {drivers.length === 0 ? (
                 <p className="text-xs text-slate-500 text-center py-6">No hay conductores registrados en la flota.</p>
-              ) : (
-                <div className="space-y-2">
-                  {drivers.map((driver) => {
-                    const isAvailable = driver.status === 'available';
-                    return (
-                      <div
-                        key={driver.id}
-                        className="p-3 bg-[#0F172A] border border-[#334155] rounded-xl flex items-center justify-between hover:border-slate-500 transition-all"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-[#FDDE12] font-extrabold flex items-center justify-center text-sm">
-                            #{driver.movil_number}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-bold text-white text-xs">
-                                {driver.profile?.full_name || `Motoquero #${driver.movil_number}`}
-                              </h4>
-                              {isAvailable ? (
-                                <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold rounded">AVAILABLE</span>
-                              ) : (
-                                <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[10px] font-bold rounded">{driver.status.toUpperCase()}</span>
-                              )}
+              ) : (() => {
+                const searchClean = driverSearchQuery.trim().toLowerCase();
+                const filteredList = drivers.filter((driver) => {
+                  if (!searchClean) return true;
+                  const movilStr = driver.movil_number ? `#${driver.movil_number}` : '';
+                  const movilNumOnly = driver.movil_number ? String(driver.movil_number) : '';
+                  const fullName = (driver.profile?.full_name || '').toLowerCase();
+                  const vehicle = (driver.vehicle_type || '').toLowerCase();
+                  const plate = (driver.vehicle_plate || '').toLowerCase();
+                  const zone = (driver.zone || '').toLowerCase();
+
+                  return (
+                    movilStr.includes(searchClean) ||
+                    movilNumOnly.includes(searchClean) ||
+                    fullName.includes(searchClean) ||
+                    vehicle.includes(searchClean) ||
+                    plate.includes(searchClean) ||
+                    zone.includes(searchClean)
+                  );
+                });
+
+                if (filteredList.length === 0) {
+                  return (
+                    <div className="p-6 text-center bg-[#0F172A] border border-[#334155] rounded-xl text-slate-400 text-xs space-y-1">
+                      <p className="font-semibold text-white">Sin resultados para &quot;{driverSearchQuery}&quot;</p>
+                      <p className="text-slate-500 text-[11px]">Intenta buscar por número de móvil, nombre o apellido.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+                    {filteredList.map((driver) => {
+                      const countOnTheWay = rides.filter((r) => r.driver_id === driver.id && r.status === 'ontheway').length;
+                      const countAssigned = rides.filter((r) => r.driver_id === driver.id && r.status === 'assigned').length;
+                      const totalActive = countOnTheWay + countAssigned;
+
+                      const isBaja = driver.status === 'baja';
+                      const isOffline = driver.status === 'offline';
+                      const isFullyOccupied = countAssigned >= 1 || totalActive >= 2;
+                      const canPreassign = countOnTheWay === 1 && countAssigned === 0;
+                      const canAssignDirect = countOnTheWay === 0 && countAssigned === 0;
+
+                      let statusBadgeLabel = 'Disponible';
+                      let statusBadgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+                      if (isBaja) {
+                        statusBadgeLabel = 'Baja';
+                        statusBadgeColor = 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+                      } else if (isOffline) {
+                        statusBadgeLabel = 'Fuera de línea';
+                        statusBadgeColor = 'bg-slate-700/50 text-slate-400 border-slate-600';
+                      } else if (totalActive > 0) {
+                        statusBadgeLabel = 'Ocupado';
+                        statusBadgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+                      }
+
+                      return (
+                        <div
+                          key={driver.id}
+                          className="p-3 bg-[#0F172A] border border-[#334155] rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-slate-500 transition-all"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-[#FDDE12] font-extrabold flex items-center justify-center text-sm flex-shrink-0">
+                              #{driver.movil_number}
                             </div>
-                            <p className="text-[11px] text-slate-400">
-                              {driver.vehicle_type} ({driver.vehicle_plate}) • Zona: {driver.zone}
-                            </p>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-white text-xs">
+                                  {driver.profile?.full_name || `Motoquero #${driver.movil_number}`}
+                                </h4>
+                                <span className={`px-2 py-0.5 border text-[10px] font-bold rounded ${statusBadgeColor}`}>
+                                  {statusBadgeLabel}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-400 mt-0.5">
+                                {driver.vehicle_type} ({driver.vehicle_plate}) • Zona: {driver.zone}
+                              </p>
+                              {/* Active Rides Breakdown */}
+                              <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-2 font-mono">
+                                <span>En curso: <strong className={countOnTheWay > 0 ? "text-purple-400" : "text-slate-300"}>{countOnTheWay}</strong></span>
+                                <span>•</span>
+                                <span>En espera: <strong className={countAssigned > 0 ? "text-amber-400" : "text-slate-300"}>{countAssigned}</strong></span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="w-full sm:w-auto flex justify-end">
+                            {isBaja || isOffline ? (
+                              <span className="px-3 py-1.5 bg-slate-800 text-slate-500 border border-slate-700 font-semibold text-xs rounded-lg">
+                                No disponible
+                              </span>
+                            ) : isFullyOccupied ? (
+                              <span className="px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold text-[11px] rounded-lg text-right max-w-[220px]">
+                                Ya tiene una carrera en curso y una carrera en espera.
+                              </span>
+                            ) : canPreassign ? (
+                              <button
+                                onClick={() => handleAssignDriver(driver)}
+                                className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all shadow-md flex items-center gap-1.5"
+                              >
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Preasignar</span>
+                              </button>
+                            ) : canAssignDirect ? (
+                              <button
+                                onClick={() => handleAssignDriver(driver)}
+                                className="px-3.5 py-1.5 bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs rounded-lg transition-all shadow-md flex items-center gap-1.5"
+                              >
+                                <UserCheck className="w-3.5 h-3.5" />
+                                <span>Asignar</span>
+                              </button>
+                            ) : null}
                           </div>
                         </div>
-
-                        <button
-                          onClick={() => handleAssignDriver(driver)}
-                          className="px-3.5 py-1.5 bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs rounded-lg transition-all shadow-md"
-                        >
-                          Asignar
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -2902,32 +3008,55 @@ export default function OperationsPage() {
             </div>
 
             <form onSubmit={handleConfirmReassignSubmit} className="space-y-4 text-xs">
-              {/* Candidate Available Driver Selection */}
+              {/* Candidate Driver Selection with Preassignment Capacity Awareness */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                   Nuevo Motoquero Receptor <span className="text-rose-400">*</span>
                 </label>
-                {drivers.filter((d) => d.status === 'available' && d.id !== rideToReassign?.driver_id).length === 0 ? (
-                  <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs">
-                    ⚠️ No hay otros motoqueros activos y disponibles en este momento.
-                  </div>
-                ) : (
-                  <select
-                    required
-                    value={reassignDriverId}
-                    onChange={(e) => setReassignDriverId(e.target.value)}
-                    className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-amber-400 text-xs"
-                  >
-                    <option value="">-- Seleccionar Motoquero Receptor --</option>
-                    {drivers
-                      .filter((d) => d.status === 'available' && d.id !== rideToReassign?.driver_id)
-                      .map((drv) => (
-                        <option key={drv.id} value={drv.id}>
-                          Móvil #{drv.movil_number} - {drv.profile?.full_name || 'Sin Nombre'} ({drv.vehicle_type || 'Moto'})
-                        </option>
-                      ))}
-                  </select>
-                )}
+                {(() => {
+                  const candidateDrivers = drivers.filter((d) => {
+                    if (d.id === rideToReassign?.driver_id) return false;
+                    if (d.status === 'baja' || d.status === 'offline') return false;
+
+                    const countOnTheWay = rides.filter((r) => r.driver_id === d.id && r.status === 'ontheway').length;
+                    const countAssigned = rides.filter((r) => r.driver_id === d.id && r.status === 'assigned').length;
+                    const totalActive = countOnTheWay + countAssigned;
+
+                    if (rideToReassign?.status === 'ontheway') {
+                      return countOnTheWay === 0 && countAssigned === 0 && totalActive === 0;
+                    } else { // assigned (en espera)
+                      return countAssigned === 0 && totalActive < 2;
+                    }
+                  });
+
+                  if (candidateDrivers.length === 0) {
+                    return (
+                      <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs">
+                        ⚠️ No hay otros motoqueros activos con capacidad disponible para recibir esta carrera.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <select
+                      required
+                      value={reassignDriverId}
+                      onChange={(e) => setReassignDriverId(e.target.value)}
+                      className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-amber-400 text-xs"
+                    >
+                      <option value="">-- Seleccionar Motoquero Receptor --</option>
+                      {candidateDrivers.map((drv) => {
+                        const countOnTheWay = rides.filter((r) => r.driver_id === drv.id && r.status === 'ontheway').length;
+                        const isPreassignCandidate = countOnTheWay > 0;
+                        return (
+                          <option key={drv.id} value={drv.id}>
+                            Móvil #{drv.movil_number} - {drv.profile?.full_name || 'Sin Nombre'} ({drv.vehicle_type || 'Moto'}) {isPreassignCandidate ? '— [Preasignación]' : '— [Disponible]'}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  );
+                })()}
               </div>
 
               {/* Reassignment Reason Category */}
