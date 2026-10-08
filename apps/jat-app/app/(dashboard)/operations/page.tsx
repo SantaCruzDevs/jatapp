@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Topbar from '@/components/layout/Topbar';
-import { getRides, createRide, assignDriverToRide, updateRideStatus, approveSurcharge, rejectSurcharge, RideWithDetails } from '@/lib/services/rides';
+import { getRides, createRide, assignDriverToRide, updateRideStatus, approveSurcharge, rejectSurcharge, reassignRideDriver, RideWithDetails } from '@/lib/services/rides';
 import { isRideTicketEligible, cancelDigitalTicket } from '@/lib/services/tickets';
 import { getUserPermissions } from '@/lib/services/permissions';
 import { findCustomerByPhone, createCustomer, CustomerWithCompany, searchUnifiedRequesters, UnifiedRequesterItem } from '@/lib/services/customers';
 import { getDrivers, DriverWithProfile } from '@/lib/services/drivers';
 import { getCompanies } from '@/lib/services/companies';
 import { getRideTimeline, RideTimelineWithActor } from '@/lib/services/ride-timeline';
-import { Company, RideStatus, RidePriority, PaymentMethod } from '@/types/database.types';
+import { Company, RideStatus, RidePriority, PaymentMethod, ReassignmentReasonCategory } from '@/types/database.types';
 import { createClient } from '@/lib/supabase/client';
 import { getDispatchSettings, saveDispatchSettings, DispatchSettings } from '@/lib/services/settings';
 import {
@@ -113,10 +113,19 @@ export default function OperationsPage() {
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
   const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
   const [hasCancelPermission, setHasCancelPermission] = useState<boolean>(false);
+  const [hasReassignPermission, setHasReassignPermission] = useState<boolean>(false);
   const [isAnnullationModalOpen, setIsAnnullationModalOpen] = useState(false);
   const [rideToAnnul, setRideToAnnul] = useState<RideWithDetails | null>(null);
   const [annullationReason, setAnnullationReason] = useState('');
   const [isSubmittingAnnullation, setIsSubmittingAnnullation] = useState(false);
+
+  // Reassignment Modal States
+  const [isReassignModalOpen, setIsReassignModalOpen] = useState(false);
+  const [rideToReassign, setRideToReassign] = useState<RideWithDetails | null>(null);
+  const [reassignDriverId, setReassignDriverId] = useState<string>('');
+  const [reassignReasonCategory, setReassignReasonCategory] = useState<ReassignmentReasonCategory>('PINCHADURA');
+  const [reassignReasonDetail, setReassignReasonDetail] = useState<string>('');
+  const [isSubmittingReassign, setIsSubmittingReassign] = useState<boolean>(false);
 
   const [selectedRideTimeline, setSelectedRideTimeline] = useState<RideTimelineWithActor[]>([]);
   const [loadingTimeline, setLoadingTimeline] = useState(false);
@@ -199,6 +208,60 @@ export default function OperationsPage() {
       setErrorMsg((err as Error).message);
     } finally {
       setIsSubmittingAnnullation(false);
+    }
+  };
+
+  // Reassignment Handlers
+  const handleOpenReassignModal = (ride: RideWithDetails) => {
+    setErrorMsg(null);
+    setRideToReassign(ride);
+    setReassignDriverId('');
+    setReassignReasonCategory('PINCHADURA');
+    setReassignReasonDetail('');
+    setIsReassignModalOpen(true);
+  };
+
+  const handleConfirmReassignSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rideToReassign) return;
+    if (!reassignDriverId) {
+      setErrorMsg('Debe seleccionar un nuevo motoquero receptor.');
+      return;
+    }
+    if (reassignReasonCategory === 'OTRO' && !reassignReasonDetail.trim()) {
+      setErrorMsg('Debe detallar el motivo cuando selecciona la categoría OTRO.');
+      return;
+    }
+
+    setIsSubmittingReassign(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const { success, error } = await reassignRideDriver({
+        ride_id: rideToReassign.id,
+        new_driver_id: reassignDriverId,
+        reason_category: reassignReasonCategory,
+        reason_detail: reassignReasonDetail.trim() || undefined,
+      });
+
+      if (error || !success) {
+        setErrorMsg(error?.message || 'Error al reasignar la carrera.');
+      } else {
+        const newDrv = drivers.find((d) => d.id === reassignDriverId);
+        const movilText = newDrv ? `Móvil #${newDrv.movil_number}` : 'nuevo motoquero';
+        setSuccessMsg(`Carrera ${rideToReassign.ride_code} reasignada exitosamente a ${movilText}.`);
+        setIsReassignModalOpen(false);
+        setIsDetailModalOpen(false);
+        setRideToReassign(null);
+        setReassignDriverId('');
+        setReassignReasonDetail('');
+        await loadData(true);
+      }
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message);
+    } finally {
+      setIsSubmittingReassign(false);
     }
   };
 
@@ -339,6 +402,8 @@ export default function OperationsPage() {
             const perms = await getUserPermissions(authData.data.user.id);
             const canCancel = perms.some((p) => p.permission_key === 'tickets.cancel');
             setHasCancelPermission(canCancel);
+            const canReassign = perms.some((p) => p.permission_key === 'rides.reassign');
+            setHasReassignPermission(canReassign);
           } catch (permErr) {
             console.warn('Error fetching permissions:', permErr);
           }
@@ -1437,6 +1502,11 @@ export default function OperationsPage() {
                         onDragStart={() => setDraggingRide(ride)}
                         onDragEnd={() => { setDraggingRide(null); setDragOverColumnId(null); }}
                         onStartOnTheWay={() => handleTransitionStatus(ride, 'ontheway')}
+                        onReassign={
+                          ['SUPERADMIN', 'ADMIN'].includes((currentUserRole || '').toUpperCase()) || hasReassignPermission
+                            ? () => handleOpenReassignModal(ride)
+                            : undefined
+                        }
                         onCancel={() => handleOpenCancelModal(ride)}
                         onViewDetail={() => handleOpenDetailModal(ride)}
                         getPriorityBadge={getPriorityBadge}
@@ -1490,6 +1560,11 @@ export default function OperationsPage() {
                       onDragStart={() => setDraggingRide(ride)}
                       onDragEnd={() => { setDraggingRide(null); setDragOverColumnId(null); }}
                       onComplete={() => handleOpenCompletionModal(ride)}
+                      onReassign={
+                        ['SUPERADMIN', 'ADMIN'].includes((currentUserRole || '').toUpperCase()) || hasReassignPermission
+                          ? () => handleOpenReassignModal(ride)
+                          : undefined
+                      }
                       onCancel={() => handleOpenCancelModal(ride)}
                       onViewDetail={() => handleOpenDetailModal(ride)}
                       getPriorityBadge={getPriorityBadge}
@@ -2225,6 +2300,18 @@ export default function OperationsPage() {
                       <ChevronRight className="w-4 h-4" />
                       <span>Iniciar En Camino</span>
                     </button>
+                    {(['SUPERADMIN', 'ADMIN'].includes((currentUserRole || '').toUpperCase()) || hasReassignPermission) && (
+                      <button
+                        onClick={() => {
+                          setIsDetailModalOpen(false);
+                          handleOpenReassignModal(selectedRideForDetail);
+                        }}
+                        className="px-3.5 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Reasignar Carrera</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => handleOpenCompletionModal(selectedRideForDetail)}
                       disabled={selectedRideForDetail.surcharge_status === 'pending'}
@@ -2249,6 +2336,18 @@ export default function OperationsPage() {
 
                 {selectedRideForDetail.status === 'ontheway' && (
                   <>
+                    {(['SUPERADMIN', 'ADMIN'].includes((currentUserRole || '').toUpperCase()) || hasReassignPermission) && (
+                      <button
+                        onClick={() => {
+                          setIsDetailModalOpen(false);
+                          handleOpenReassignModal(selectedRideForDetail);
+                        }}
+                        className="px-3.5 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Reasignar Carrera</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => handleOpenCompletionModal(selectedRideForDetail)}
                       disabled={selectedRideForDetail.surcharge_status === 'pending'}
@@ -2716,6 +2815,188 @@ export default function OperationsPage() {
           </div>
         </div>
       )}
+
+      {/* MODAL 8: REASIGNACIÓN DE CARRERA / MOTOQUERO */}
+      {isReassignModalOpen && rideToReassign && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-[#1E293B] border border-[#334155] rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-5 animate-scaleUp">
+            <div className="flex items-center justify-between pb-3 border-b border-[#334155]">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-xl">
+                  <RefreshCw className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white font-heading">
+                    Reasignar Carrera a Otro Motoquero
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Cambio operativo de móvil manteniendo la identidad de la carrera
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsReassignModalOpen(false);
+                  setRideToReassign(null);
+                  setErrorMsg(null);
+                }}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-[#0F172A]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {errorMsg && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                  <span className="font-medium">{errorMsg}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setErrorMsg(null)}
+                  className="text-rose-400 hover:text-white p-0.5"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Context Notice Banner */}
+            <div className="p-3 bg-sky-500/10 border border-sky-500/30 rounded-xl text-sky-300 text-xs flex items-start gap-2">
+              <ShieldCheck className="w-4 h-4 text-sky-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-white">Información al Cliente:</p>
+                <p>
+                  El código <strong className="font-mono text-sky-400">{rideToReassign.ride_code}</strong> NO cambiará. El comprobante y seguimiento mostrarán únicamente al motoquero receptor.
+                </p>
+              </div>
+            </div>
+
+            {/* Current Ride & Driver Summary */}
+            <div className="bg-[#0F172A] border border-[#334155] rounded-xl p-4 space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Código de Carrera:</span>
+                <span className="font-mono font-bold text-sky-400">{rideToReassign.ride_code}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Solicitante:</span>
+                <span className="font-semibold text-white">
+                  {rideToReassign.requester_person} ({rideToReassign.requester_company})
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Motoquero Actual (Reemplazado):</span>
+                <span className="font-semibold text-amber-400">
+                  {rideToReassign.driver
+                    ? `Móvil #${rideToReassign.driver.movil_number} (${rideToReassign.driver.profile?.full_name || 'Asignado'})`
+                    : 'Sin asignar'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-[#334155]">
+                <span className="font-bold text-slate-300">Monto Carrera:</span>
+                <span className="font-bold text-[#FDDE12] font-mono text-base">
+                  Bs. {Number(rideToReassign.total_fare).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <form onSubmit={handleConfirmReassignSubmit} className="space-y-4 text-xs">
+              {/* Candidate Available Driver Selection */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Nuevo Motoquero Receptor <span className="text-rose-400">*</span>
+                </label>
+                {drivers.filter((d) => d.status === 'available' && d.id !== rideToReassign?.driver_id).length === 0 ? (
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs">
+                    ⚠️ No hay otros motoqueros activos y disponibles en este momento.
+                  </div>
+                ) : (
+                  <select
+                    required
+                    value={reassignDriverId}
+                    onChange={(e) => setReassignDriverId(e.target.value)}
+                    className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-amber-400 text-xs"
+                  >
+                    <option value="">-- Seleccionar Motoquero Receptor --</option>
+                    {drivers
+                      .filter((d) => d.status === 'available' && d.id !== rideToReassign?.driver_id)
+                      .map((drv) => (
+                        <option key={drv.id} value={drv.id}>
+                          Móvil #{drv.movil_number} - {drv.profile?.full_name || 'Sin Nombre'} ({drv.vehicle_type || 'Moto'})
+                        </option>
+                      ))}
+                  </select>
+                )}
+              </div>
+
+              {/* Reassignment Reason Category */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Motivo Operativo de Reasignación <span className="text-rose-400">*</span>
+                </label>
+                <select
+                  required
+                  value={reassignReasonCategory}
+                  onChange={(e) => setReassignReasonCategory(e.target.value as ReassignmentReasonCategory)}
+                  className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-amber-400 text-xs"
+                >
+                  <option value="PINCHADURA">🔧 Pinchadura de llanta / neumático</option>
+                  <option value="ACCIDENTE">🚨 Percance / Accidente de tránsito</option>
+                  <option value="FALLA_MECANICA">⚙️ Falla mecánica del vehículo</option>
+                  <option value="INDISPONIBILIDAD_MOTOQUERO">👤 Indisposición / Urgencia del motoquero</option>
+                  <option value="PROBLEMA_MOVIL">📱 Problema técnico con el dispositivo/móvil</option>
+                  <option value="OTRO">📋 Otro motivo operativo (requiere detalle obligatorio)</option>
+                </select>
+              </div>
+
+              {/* Reason Detail Textarea */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Detalle Adicional del Motivo {reassignReasonCategory === 'OTRO' && <span className="text-rose-400">*</span>}
+                </label>
+                <textarea
+                  rows={2}
+                  required={reassignReasonCategory === 'OTRO'}
+                  value={reassignReasonDetail}
+                  onChange={(e) => setReassignReasonDetail(e.target.value)}
+                  placeholder={
+                    reassignReasonCategory === 'OTRO'
+                      ? 'Describa detalladamente la razón operativa...'
+                      : 'Observación opcional para auditoría interna...'
+                  }
+                  className="w-full bg-[#0F172A] border border-[#334155] rounded-xl p-3 text-white text-xs focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#334155]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsReassignModalOpen(false);
+                    setRideToReassign(null);
+                    setErrorMsg(null);
+                  }}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition-colors text-xs"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    isSubmittingReassign ||
+                    drivers.filter((d) => d.status === 'available' && d.id !== rideToReassign?.driver_id).length === 0
+                  }
+                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-[#0F172A] font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 text-xs disabled:opacity-50"
+                >
+                  {isSubmittingReassign && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>Confirmar Reasignación</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2731,6 +3012,7 @@ interface RideCardProps {
   onAssign?: () => void;
   onStartOnTheWay?: () => void;
   onComplete?: () => void;
+  onReassign?: () => void;
   onCancel?: () => void;
   onViewDetail: () => void;
   getPriorityBadge: (p: RidePriority) => React.ReactNode;
@@ -2744,6 +3026,7 @@ function RideCard({
   onAssign,
   onStartOnTheWay,
   onComplete,
+  onReassign,
   onCancel,
   onViewDetail,
   getPriorityBadge,
@@ -2856,6 +3139,18 @@ function RideCard({
               className="px-2 py-1 bg-purple-500 hover:bg-purple-400 text-white font-bold rounded text-[10px]"
             >
               En Camino
+            </button>
+          )}
+
+          {onReassign && (ride.status === 'assigned' || ride.status === 'ontheway') && (
+            <button
+              type="button"
+              onClick={onReassign}
+              title="Reasignar carrera a otro motoquero"
+              className="px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold rounded text-[10px] flex items-center gap-1"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>Reasignar</span>
             </button>
           )}
 

@@ -14,6 +14,7 @@ import {
   CompanyPerformanceReport, 
   DailyMovementRow 
 } from '@/lib/services/executive-reports';
+import { getRideReassignments } from '@/lib/services/rides';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { getJatOperationalWeek } from '@/lib/utils/date-helpers';
 import { 
@@ -34,7 +35,8 @@ import {
   FileText,
   CreditCard,
   PieChart,
-  Users
+  Users,
+  RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -43,12 +45,13 @@ export default function ExecutiveReportsPage() {
   const [driverReport, setDriverReport] = useState<DriverPerformanceReport[]>([]);
   const [companyReport, setCompanyReport] = useState<CompanyPerformanceReport[]>([]);
   const [dailyLogs, setDailyLogs] = useState<DailyMovementRow[]>([]);
+  const [reassignments, setReassignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Tabs: 'kpis' | 'daily' | 'drivers' | 'companies' | 'close'
-  const [activeTab, setActiveTab] = useState<'kpis' | 'daily' | 'drivers' | 'companies' | 'close'>('kpis');
+  // Tabs: 'kpis' | 'daily' | 'drivers' | 'companies' | 'reassignments' | 'close'
+  const [activeTab, setActiveTab] = useState<'kpis' | 'daily' | 'drivers' | 'companies' | 'reassignments' | 'close'>('kpis');
 
   // Period Selector
   const [periodPreset, setPeriodPreset] = useState<'today' | 'yesterday' | 'week' | 'month' | 'custom'>('today');
@@ -88,17 +91,19 @@ export default function ExecutiveReportsPage() {
     }
 
     try {
-      const [metRes, drvRes, compRes, logsRes] = await Promise.all([
+      const [metRes, drvRes, compRes, logsRes, reassignRes] = await Promise.all([
         getExecutiveMetrics(startIso, endIso),
         getDriverPerformanceReport(startIso, endIso),
         getCompanyPerformanceReport(),
         getDailyMovementLogs(startIso, endIso),
+        getRideReassignments({ startDate: startIso, endDate: endIso }),
       ]);
 
       if (metRes.metrics) setMetrics(metRes.metrics);
       if (drvRes.report) setDriverReport(drvRes.report);
       if (compRes.report) setCompanyReport(compRes.report);
       if (logsRes.logs) setDailyLogs(logsRes.logs);
+      if (reassignRes.data) setReassignments(reassignRes.data);
 
       if (metRes.error) setErrorMsg(metRes.error.message);
     } catch (err: unknown) {
@@ -221,6 +226,16 @@ export default function ExecutiveReportsPage() {
             >
               <Building2 className="w-4 h-4" />
               <span>Reporte Empresas</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('reassignments')}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all ${
+                activeTab === 'reassignments' ? 'bg-[#FDDE12] text-[#0F172A] shadow-md' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Reasignaciones</span>
             </button>
 
             <button
@@ -567,7 +582,224 @@ export default function ExecutiveReportsPage() {
               </div>
             )}
 
-            {/* TAB 5: CIERRE GLOBAL DE PERÍODO */}
+            {/* TAB 5: TRAZABILIDAD DE REASIGNACIONES OPERATIVAS */}
+            {activeTab === 'reassignments' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-[#1E293B] border border-[#334155] rounded-2xl shadow-lg space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-xl">
+                      <RefreshCw className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-white font-heading">
+                        Trazabilidad de Reasignaciones Operativas
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        Auditoría y control de carreras transferidas de un motoquero a otro por motivos de fuerza mayor u operativos
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Summary Metric Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs pt-2">
+                    <div className="p-4 bg-[#0F172A] border border-[#334155] rounded-xl space-y-1">
+                      <span className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Total Reasignaciones</span>
+                      <p className="text-2xl font-bold text-white font-mono">{reassignments.length}</p>
+                      <p className="text-[10px] text-slate-500">Carreras reasignadas en el período</p>
+                    </div>
+
+                    <div className="p-4 bg-[#0F172A] border border-[#334155] rounded-xl space-y-1">
+                      <span className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Motivo Frecuente</span>
+                      <p className="text-sm font-bold text-amber-400 truncate">
+                        {(() => {
+                          if (reassignments.length === 0) return 'N/A';
+                          const counts: Record<string, number> = {};
+                          reassignments.forEach((r) => {
+                            counts[r.reason_category] = (counts[r.reason_category] || 0) + 1;
+                          });
+                          let top = '';
+                          let max = 0;
+                          Object.entries(counts).forEach(([cat, cnt]) => {
+                            if (cnt > max) {
+                              max = cnt;
+                              top = cat;
+                            }
+                          });
+                          const categoryLabels: Record<string, string> = {
+                            PINCHADURA: 'Pinchadura',
+                            ACCIDENTE: 'Accidente',
+                            FALLA_MECANICA: 'Falla Mecánica',
+                            INDISPONIBILIDAD_MOTOQUERO: 'Indisposición',
+                            PROBLEMA_MOVIL: 'Problema Móvil',
+                            OTRO: 'Otro',
+                          };
+                          return `${categoryLabels[top] || top} (${max})`;
+                        })()}
+                      </p>
+                      <p className="text-[10px] text-slate-500">Causa principal registrada</p>
+                    </div>
+
+                    <div className="p-4 bg-[#0F172A] border border-[#334155] rounded-xl space-y-1">
+                      <span className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Motoquero Reemplazado (Top)</span>
+                      <p className="text-sm font-bold text-rose-400 truncate">
+                        {(() => {
+                          if (reassignments.length === 0) return 'N/A';
+                          const counts: Record<string, { movil: number; count: number }> = {};
+                          reassignments.forEach((r) => {
+                            const k = r.previous_driver_id || 'unknown';
+                            if (!counts[k]) counts[k] = { movil: r.previous_movil_number, count: 0 };
+                            counts[k].count += 1;
+                          });
+                          let topMovil = 0;
+                          let max = 0;
+                          Object.values(counts).forEach((val) => {
+                            if (val.count > max) {
+                              max = val.count;
+                              topMovil = val.movil;
+                            }
+                          });
+                          return topMovil ? `Móvil #${topMovil} (${max})` : 'N/A';
+                        })()}
+                      </p>
+                      <p className="text-[10px] text-slate-500">Mayor cantidad de cesiones</p>
+                    </div>
+
+                    <div className="p-4 bg-[#0F172A] border border-[#334155] rounded-xl space-y-1">
+                      <span className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Motoquero Receptor (Top)</span>
+                      <p className="text-sm font-bold text-emerald-400 truncate">
+                        {(() => {
+                          if (reassignments.length === 0) return 'N/A';
+                          const counts: Record<string, { movil: number; count: number }> = {};
+                          reassignments.forEach((r) => {
+                            const k = r.new_driver_id || 'unknown';
+                            if (!counts[k]) counts[k] = { movil: r.new_movil_number, count: 0 };
+                            counts[k].count += 1;
+                          });
+                          let topMovil = 0;
+                          let max = 0;
+                          Object.values(counts).forEach((val) => {
+                            if (val.count > max) {
+                              max = val.count;
+                              topMovil = val.movil;
+                            }
+                          });
+                          return topMovil ? `Móvil #${topMovil} (${max})` : 'N/A';
+                        })()}
+                      </p>
+                      <p className="text-[10px] text-slate-500">Mayor soporte otorgado</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detailed Traceability Table */}
+                <div className="bg-[#1E293B] border border-[#334155] rounded-2xl shadow-lg overflow-hidden">
+                  <div className="p-4 bg-[#0F172A] border-b border-[#334155] flex items-center justify-between">
+                    <h4 className="font-bold text-white text-xs uppercase tracking-wider">
+                      Historial Detallado de Reasignaciones ({reassignments.length})
+                    </h4>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-300">
+                      <thead className="bg-[#0F172A]/80 border-b border-[#334155] text-[11px] font-bold text-slate-400 uppercase">
+                        <tr>
+                          <th className="p-3">Fecha y Hora</th>
+                          <th className="p-3">Código Carrera</th>
+                          <th className="p-3">Solicitante</th>
+                          <th className="p-3">Motoquero Reemplazado</th>
+                          <th className="p-3">Motoquero Receptor</th>
+                          <th className="p-3">Motivo Operativo</th>
+                          <th className="p-3">Detalle</th>
+                          <th className="p-3">Operador</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#334155]">
+                        {reassignments.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="p-8 text-center text-slate-500">
+                              No hay registros de reasignaciones para el período seleccionado.
+                            </td>
+                          </tr>
+                        ) : (
+                          reassignments.map((r) => (
+                            <tr key={r.id} className="hover:bg-slate-800/50 transition-colors">
+                              <td className="p-3 font-mono text-[11px] text-slate-400 whitespace-nowrap">
+                                {new Date(r.created_at).toLocaleString('es-BO', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </td>
+                              <td className="p-3 font-mono font-bold text-sky-400 whitespace-nowrap">
+                                {r.ride?.ride_code || 'N/A'}
+                              </td>
+                              <td className="p-3">
+                                <div className="font-medium text-white">{r.ride?.requester_person || 'N/A'}</div>
+                                <div className="text-[10px] text-indigo-300">{r.ride?.requester_company || 'Particular'}</div>
+                              </td>
+                              <td className="p-3">
+                                <span className="font-bold text-amber-400">Móvil #{r.previous_movil_number}</span>
+                                {r.previous_driver?.profile?.full_name && (
+                                  <span className="text-[10px] text-slate-400 block">{r.previous_driver.profile.full_name}</span>
+                                )}
+                              </td>
+                              <td className="p-3">
+                                <span className="font-bold text-emerald-400">Móvil #{r.new_movil_number}</span>
+                                {r.new_driver?.profile?.full_name && (
+                                  <span className="text-[10px] text-slate-400 block">{r.new_driver.profile.full_name}</span>
+                                )}
+                              </td>
+                              <td className="p-3 whitespace-nowrap">
+                                {r.reason_category === 'PINCHADURA' && (
+                                  <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded text-[10px] font-bold">
+                                    🔧 PINCHADURA
+                                  </span>
+                                )}
+                                {r.reason_category === 'ACCIDENTE' && (
+                                  <span className="px-2 py-0.5 bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded text-[10px] font-bold">
+                                    🚨 ACCIDENTE
+                                  </span>
+                                )}
+                                {r.reason_category === 'FALLA_MECANICA' && (
+                                  <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-500/30 rounded text-[10px] font-bold">
+                                    ⚙️ FALLA MECÁNICA
+                                  </span>
+                                )}
+                                {r.reason_category === 'INDISPONIBILIDAD_MOTOQUERO' && (
+                                  <span className="px-2 py-0.5 bg-sky-500/10 text-sky-400 border border-sky-500/30 rounded text-[10px] font-bold">
+                                    👤 INDISPOSICIÓN
+                                  </span>
+                                )}
+                                {r.reason_category === 'PROBLEMA_MOVIL' && (
+                                  <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 rounded text-[10px] font-bold">
+                                    📱 PROBLEMA MÓVIL
+                                  </span>
+                                )}
+                                {r.reason_category === 'OTRO' && (
+                                  <span className="px-2 py-0.5 bg-slate-500/10 text-slate-300 border border-slate-500/30 rounded text-[10px] font-bold">
+                                    📋 OTRO
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-3 max-w-[200px] truncate text-slate-300">
+                                {r.reason_detail || '-'}
+                              </td>
+                              <td className="p-3 text-slate-300 whitespace-nowrap">
+                                {r.reassigned_by_profile?.full_name || 'Sistema'}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 6: CIERRE GLOBAL DE PERÍODO */}
             {activeTab === 'close' && (
               <div className="p-8 bg-[#1E293B] border-2 border-purple-500/40 rounded-2xl shadow-2xl space-y-6">
                 <div className="flex items-center gap-3">

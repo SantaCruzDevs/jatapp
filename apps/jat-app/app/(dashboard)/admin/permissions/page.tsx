@@ -218,6 +218,7 @@ export default function PermissionsAdminPage() {
                     >
                       <option value="financial_balances.view">financial_balances.view (Vista Balances Financieros)</option>
                       <option value="tickets.cancel">tickets.cancel (Anulación de Comprobantes)</option>
+                      <option value="rides.reassign">rides.reassign (Reasignación de Carreras)</option>
                       <option value="CUSTOM">Otro permiso personalizado...</option>
                     </select>
                   </div>

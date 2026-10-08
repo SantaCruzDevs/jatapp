@@ -478,3 +478,118 @@ export async function rejectSurcharge(
 
   return { error: null };
 }
+
+/**
+ * Reassigns an active ride (assigned/ontheway) to a new available driver atomically via RPC.
+ */
+export async function reassignRideDriver(
+  rideIdOrParams: string | { ride_id: string; new_driver_id: string; reason_category: string; reason_detail?: string },
+  newDriverId?: string,
+  reasonCategory?: string,
+  reasonDetail?: string
+): Promise<{ success: boolean; message?: string; error?: Error | null }> {
+  try {
+    const rideId = typeof rideIdOrParams === 'object' ? rideIdOrParams.ride_id : rideIdOrParams;
+    const driverId = typeof rideIdOrParams === 'object' ? rideIdOrParams.new_driver_id : newDriverId!;
+    const category = typeof rideIdOrParams === 'object' ? rideIdOrParams.reason_category : reasonCategory!;
+    const detail = typeof rideIdOrParams === 'object' ? rideIdOrParams.reason_detail : reasonDetail;
+
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc('reassign_ride_driver_atomic', {
+      p_ride_id: rideId,
+      p_new_driver_id: driverId,
+      p_reason_category: category,
+      p_reason_detail: detail || null,
+    });
+
+    if (error) {
+      console.error('RPC Error in reassign_ride_driver_atomic:', error);
+      return { success: false, error: new Error(error.message) };
+    }
+
+    const res = data as { success: boolean; message?: string; error?: string };
+    if (!res.success) {
+      return { success: false, error: new Error(res.error || 'Error al reasignar carrera.') };
+    }
+
+    return { success: true, message: res.message };
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('Unhandled exception in reassignRideDriver:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Fetches structured ride reassignments with full joined details for management reporting.
+ */
+export async function getRideReassignments(params?: {
+  dateRange?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+}): Promise<{ data: any[] | null; error: Error | null }> {
+  try {
+    const supabase = createClient();
+    let query = supabase
+      .from('ride_reassignments')
+      .select(`
+        id,
+        ride_id,
+        previous_driver_id,
+        previous_movil_number,
+        new_driver_id,
+        new_movil_number,
+        reason_category,
+        reason_detail,
+        reassigned_by,
+        created_at,
+        ride:rides (
+          id,
+          ride_code,
+          requester_person,
+          requester_company,
+          status,
+          total_fare
+        ),
+        previous_driver:drivers!ride_reassignments_previous_driver_id_fkey (
+          id,
+          movil_number,
+          profile:profiles (
+            full_name
+          )
+        ),
+        new_driver:drivers!ride_reassignments_new_driver_id_fkey (
+          id,
+          movil_number,
+          profile:profiles (
+            full_name
+          )
+        ),
+        reassigned_by_profile:profiles!ride_reassignments_reassigned_by_fkey (
+          id,
+          full_name,
+          role
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (params?.startDate) {
+      query = query.gte('created_at', params.startDate);
+    }
+    if (params?.endDate) {
+      query = query.lte('created_at', params.endDate);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error('Error fetching ride reassignments:', error);
+      return { data: null, error: new Error(error.message) };
+    }
+
+    return { data, error: null };
+  } catch (err: unknown) {
+    const error = err as Error;
+    return { data: null, error };
+  }
+}

@@ -136,6 +136,32 @@ export interface RideTimeline {
   created_at: string;
 }
 
+export type ReassignmentReasonCategory =
+  | 'PINCHADURA'
+  | 'ACCIDENTE'
+  | 'FALLA_MECANICA'
+  | 'INDISPONIBILIDAD_MOTOQUERO'
+  | 'PROBLEMA_MOVIL'
+  | 'OTRO';
+
+export interface RideReassignment {
+  id: string;
+  ride_id: string;
+  previous_driver_id: string | null;
+  previous_movil_number: number | null;
+  new_driver_id: string;
+  new_movil_number: number;
+  reason_category: ReassignmentReasonCategory;
+  reason_detail: string | null;
+  reassigned_by: string;
+  created_at: string;
+  // Joined fields for UI reports
+  ride?: Ride | null;
+  previous_driver?: Driver & { profile?: Profile | null } | null;
+  new_driver?: Driver & { profile?: Profile | null } | null;
+  reassigned_by_profile?: Profile | null;
+}
+
 export interface DriverSettlement {
   id: string;
   settlement_code?: string | null;
