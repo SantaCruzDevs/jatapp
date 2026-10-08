@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getDigitalTicketByCode } from '@/lib/services/tickets';
+import { getDigitalTicketByCode, formatPaymentMethodLabel } from '@/lib/services/tickets';
 
 export async function POST(req: Request) {
   try {
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
               <p><strong>Origen:</strong> ${ticket.pickup_address}</p>
               <p><strong>Destino:</strong> ${ticket.destination_address}</p>
               <p><strong>Importe Total:</strong> <strong style="font-size: 18px; color: #10B981;">Bs. ${ticket.total_fare.toFixed(2)}</strong></p>
-              <p><strong>Forma de Pago:</strong> ${ticket.payment_method === 'Ticket' ? 'TICKET DIGITAL' : (ticket.payment_method || 'EFECTIVO').toUpperCase()}</p>
+              <p><strong>Forma de Pago:</strong> ${formatPaymentMethodLabel(ticket.payment_method)}</p>
             </div>
 
             <p style="text-align: center; margin-top: 24px;">

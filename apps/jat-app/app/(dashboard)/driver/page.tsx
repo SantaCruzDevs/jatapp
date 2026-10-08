@@ -837,7 +837,7 @@ export default function DriverPage() {
                       }`}
                     >
                       <FileText className="w-5 h-5" />
-                      <span>TICKET CORPORATIVO</span>
+                      <span>TICKET</span>
                     </button>
                   )}
                 </div>

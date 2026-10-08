@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Topbar from '@/components/layout/Topbar';
-import { getDigitalTickets, DigitalTicket } from '@/lib/services/tickets';
+import { getDigitalTickets, DigitalTicket, formatPaymentMethodLabel } from '@/lib/services/tickets';
 import { getCurrentUserProfileClient } from '@/lib/services/auth';
 import { getDriverByProfileId } from '@/lib/services/drivers';
 import { PaymentMethod, RideStatus } from '@/types/database.types';
@@ -243,7 +243,7 @@ export default function TicketsPage() {
                 <option value="all">Todas las formas de pago</option>
                 <option value="Efectivo">Efectivo</option>
                 <option value="QR">Pago QR</option>
-                <option value="Ticket">Crédito Corporativo (Ticket)</option>
+                <option value="Ticket">Ticket</option>
               </select>
 
               <select
@@ -345,7 +345,7 @@ export default function TicketsPage() {
                               <FileText className="w-3.5 h-3.5 text-sky-400" />
                               <span>{t.serviceCode || t.ticketCode}</span>
                             </Link>
-                            {t.corporateTicketCode && (
+                            {t.corporateTicketCode && t.corporateTicketCode !== (t.serviceCode || t.ticketCode) && (
                               <div className="text-[10px] text-indigo-300 font-mono font-bold">
                                 Ticket: {t.corporateTicketCode}
                               </div>
@@ -397,7 +397,7 @@ export default function TicketsPage() {
 
                         <td className="py-3.5 px-4">
                           <span className="px-2 py-0.5 bg-slate-800 border border-slate-700 text-slate-200 rounded font-bold text-[11px]">
-                            {t.payment_method === 'Ticket' ? 'CRÉDITO CORPORATIVO' : (t.payment_method || 'EFECTIVO').toUpperCase()}
+                            {formatPaymentMethodLabel(t.payment_method)}
                           </span>
                         </td>
 

@@ -58,6 +58,20 @@ export interface PublicTicketPayload {
 }
 
 /**
+ * Formats payment method label for UI presentation:
+ * 'Efectivo' -> 'EFECTIVO'
+ * 'QR'       -> 'QR'
+ * 'Ticket'   -> 'TICKET'
+ */
+export function formatPaymentMethodLabel(paymentMethod?: string | null): string {
+  if (!paymentMethod) return 'EFECTIVO';
+  const clean = paymentMethod.trim();
+  if (clean === 'Ticket') return 'TICKET';
+  if (clean.toLowerCase() === 'qr') return 'QR';
+  return clean.toUpperCase();
+}
+
+/**
  * Formats public service receipt code:
  * Returns rideCode directly if it already starts with SJ- or TK-.
  * Converts 'JAT-2610-000002' -> 'SJ-2610-000002'

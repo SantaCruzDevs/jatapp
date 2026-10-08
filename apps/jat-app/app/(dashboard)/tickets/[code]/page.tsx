@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, use } from 'react';
 import Topbar from '@/components/layout/Topbar';
-import { getDigitalTicketByCode, DigitalTicket } from '@/lib/services/tickets';
+import { getDigitalTicketByCode, DigitalTicket, formatPaymentMethodLabel } from '@/lib/services/tickets';
 import { getTicketFormatSetting, TicketFormat } from '@/lib/services/system-settings';
 import { 
   FileText, 
@@ -228,15 +228,9 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
               <div className="flex justify-between">
                 <span className="text-slate-600">Forma de Pago:</span>
                 <span className="font-bold text-slate-900">
-                  {ticket.payment_method === 'Ticket' ? 'CRÉDITO CORPORATIVO' : (ticket.payment_method || 'Efectivo').toUpperCase()}
+                  {formatPaymentMethodLabel(ticket.payment_method)}
                 </span>
               </div>
-              {ticket.payment_method === 'Ticket' && ticket.corporateTicketCode && (
-                <div className="flex justify-between text-[#0F172A] font-bold bg-amber-50 p-1.5 rounded border border-amber-200">
-                  <span>Ticket Corporativo:</span>
-                  <span className="font-mono">{ticket.corporateTicketCode}</span>
-                </div>
-              )}
               <div className="flex justify-between items-center pt-2 text-sm sm:text-base font-extrabold text-slate-900 border-t border-slate-400">
                 <span>TARIFA FINAL:</span>
                 <span className="text-emerald-700">Bs. {ticket.total_fare.toFixed(2)}</span>
@@ -419,7 +413,7 @@ export default function TicketDetailPage({ params }: TicketDetailPageProps) {
                 <div className="flex justify-between text-slate-700 pt-1 border-t border-slate-200">
                   <span>Forma de Pago:</span>
                   <span className="font-bold text-slate-900">
-                    {ticket.payment_method === 'Ticket' ? 'TICKET DIGITAL' : (ticket.payment_method || 'Efectivo').toUpperCase()}
+                    {formatPaymentMethodLabel(ticket.payment_method)}
                   </span>
                 </div>
                 {ticket.observations && (

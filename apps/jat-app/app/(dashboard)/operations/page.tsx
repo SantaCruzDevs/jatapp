@@ -1877,7 +1877,7 @@ export default function OperationsPage() {
                   >
                     <option value="Efectivo">Efectivo</option>
                     <option value="QR">Pago QR</option>
-                    <option value="Ticket">Ticket Corporativo</option>
+                    <option value="Ticket">Ticket</option>
                   </select>
                 </div>
 

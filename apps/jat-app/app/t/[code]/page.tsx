@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, use, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { getPublicVerificationTicket, PublicTicketPayload } from '@/lib/services/tickets';
+import { getPublicVerificationTicket, PublicTicketPayload, formatPaymentMethodLabel } from '@/lib/services/tickets';
 import { 
   ShieldCheck, 
   CheckCircle2, 
@@ -121,7 +121,7 @@ function PublicTicketPageContent({ code }: { code: string }) {
             <div className="flex items-center justify-between border-b border-[#334155] pb-2">
               <span className="text-slate-400">Forma de Pago:</span>
               <span className="text-slate-200 font-bold">
-                {payload.payment_method === 'Ticket' ? 'TICKET DIGITAL' : (payload.payment_method || 'EFECTIVO').toUpperCase()}
+                {formatPaymentMethodLabel(payload.payment_method)}
               </span>
             </div>
 

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { calculateTaxSurcharge } from '@/lib/services/company-account';
 import { CompanyTaxMode } from '@/types/database.types';
-import { formatTicketCode } from '@/lib/services/tickets';
+import { formatTicketCode, formatPaymentMethodLabel } from '@/lib/services/tickets';
 import { 
   FileText, 
   X, 
@@ -286,7 +286,7 @@ export function SelectedTicketDetailModal({
               <div>
                 <span className="text-[10px] text-slate-400 block font-semibold uppercase">Forma de Pago</span>
                 <span className="text-xs font-bold text-slate-200">
-                  {details.payment_method === 'Ticket' ? 'CRÉDITO CORPORATIVO' : (details.payment_method || 'EFECTIVO').toUpperCase()}
+                  {formatPaymentMethodLabel(details.payment_method)}
                 </span>
               </div>
 
