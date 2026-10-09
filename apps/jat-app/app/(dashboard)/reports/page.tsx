@@ -36,9 +36,11 @@ import {
   CreditCard,
   PieChart,
   Users,
-  RefreshCw
+  RefreshCw,
+  ArrowLeft
 } from 'lucide-react';
 import Link from 'next/link';
+import CompanyAccountTab from '@/app/(dashboard)/clients/companies/[companyId]/components/CompanyAccountTab';
 
 export default function ExecutiveReportsPage() {
   const [metrics, setMetrics] = useState<ExecutiveMetrics | null>(null);
@@ -61,6 +63,28 @@ export default function ExecutiveReportsPage() {
   // Global Closing Modal State
   const [isClosingModalOpen, setIsClosingModalOpen] = useState(false);
   const [isClosingSuccess, setIsClosingSuccess] = useState(false);
+
+  // Corporate Account Statement Modal State
+  const [selectedCompanyForAccountModal, setSelectedCompanyForAccountModal] = useState<{ id: string; businessName: string } | null>(null);
+
+  // Keyboard Escape listener to close account statement modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedCompanyForAccountModal) {
+        setSelectedCompanyForAccountModal(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedCompanyForAccountModal]);
+
+  // Map report period to initialDateFilter for CompanyAccountTab
+  const getMappedInitialDateFilter = (): 'all' | 'today' | 'week' | 'month' => {
+    if (periodPreset === 'today') return 'today';
+    if (periodPreset === 'week') return 'week';
+    if (periodPreset === 'month') return 'month';
+    return 'all';
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -539,8 +563,9 @@ export default function ExecutiveReportsPage() {
             {/* TAB 4: REPORTE POR EMPRESA */}
             {activeTab === 'companies' && (
               <div className="bg-[#1E293B] rounded-2xl border border-[#334155] overflow-hidden shadow-xl">
-                <div className="p-4 bg-[#0F172A] border-b border-[#334155] font-bold text-xs text-white">
-                  Reporte de Cuentas Corrientes Corporativas ({companyReport.length} empresas)
+                <div className="p-4 bg-[#0F172A] border-b border-[#334155] font-bold text-xs text-white flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <span>Reporte de Cuentas Corrientes Corporativas ({companyReport.length} empresas)</span>
+                  <span className="text-[11px] text-slate-400 font-normal">Haz clic en cualquier empresa para ver su Estado de Cuenta</span>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -553,12 +578,28 @@ export default function ExecutiveReportsPage() {
                         <th className="py-3.5 px-4 text-right">Total Pagos</th>
                         <th className="py-3.5 px-4 text-right">Saldo Pendiente</th>
                         <th className="py-3.5 px-4 text-right">Estado Cobranza</th>
+                        <th className="py-3.5 px-4 text-center">Acción</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#334155] text-slate-300">
                       {companyReport.map((c) => (
-                        <tr key={c.company_id} className="hover:bg-[#334155]/30">
-                          <td className="py-3.5 px-4 font-bold text-white">{c.business_name}</td>
+                        <tr
+                          key={c.company_id}
+                          onClick={() => setSelectedCompanyForAccountModal({ id: c.company_id, businessName: c.business_name })}
+                          className="hover:bg-[#334155]/50 cursor-pointer transition-colors group"
+                          tabIndex={0}
+                          role="button"
+                          title={`Ver Estado de Cuenta Corporativo de ${c.business_name}`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setSelectedCompanyForAccountModal({ id: c.company_id, businessName: c.business_name });
+                            }
+                          }}
+                        >
+                          <td className="py-3.5 px-4 font-bold text-white group-hover:text-[#FDDE12] transition-colors">
+                            {c.business_name}
+                          </td>
                           <td className="py-3.5 px-4 font-mono text-slate-400">{c.nit || 'Sin NIT'}</td>
                           <td className="py-3.5 px-4 text-right font-mono text-purple-400 font-bold">Bs. {c.total_charges.toFixed(2)}</td>
                           <td className="py-3.5 px-4 text-right font-mono text-emerald-400 font-bold">Bs. {c.total_payments.toFixed(2)}</td>
@@ -573,6 +614,12 @@ export default function ExecutiveReportsPage() {
                             {c.cobranza_status === 'PENDIENTE' && (
                               <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded text-[10px] font-bold">PENDIENTE</span>
                             )}
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            <span className="px-2.5 py-1 bg-slate-800 group-hover:bg-[#FDDE12] text-slate-300 group-hover:text-[#0F172A] rounded-lg border border-slate-700 group-hover:border-[#FDDE12] text-[11px] font-bold transition-all inline-flex items-center gap-1">
+                              <span>Ver Cuenta</span>
+                              <CreditCard className="w-3.5 h-3.5" />
+                            </span>
                           </td>
                         </tr>
                       ))}
@@ -884,6 +931,52 @@ export default function ExecutiveReportsPage() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* FULL-SCREEN OVERLAY MODAL: ESTADO DE CUENTA CORPORATIVO */}
+      {selectedCompanyForAccountModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex flex-col overflow-y-auto animate-fadeIn print:bg-white print:static print:overflow-visible">
+          {/* Modal Header Bar */}
+          <div className="sticky top-0 z-20 bg-[#1E293B] border-b border-[#334155] p-4 sm:p-5 shadow-2xl flex items-center justify-between print:hidden">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedCompanyForAccountModal(null)}
+                className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition-colors flex items-center gap-1.5 text-xs font-semibold"
+                title="Volver al Reporte de Empresas (Esc)"
+              >
+                <ArrowLeft className="w-4 h-4 text-[#FDDE12]" />
+                <span className="hidden sm:inline">Volver a Reporte Empresas</span>
+              </button>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-white font-heading flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-[#FDDE12]" />
+                  <span>Estado de Cuenta Corporativo — {selectedCompanyForAccountModal.businessName}</span>
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  Consulta detallada de movimientos, abonos y facturación corporativa en vivo
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSelectedCompanyForAccountModal(null)}
+              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+              title="Cerrar modal (Esc)"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Modal Body Container */}
+          <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+            <CompanyAccountTab
+              companyId={selectedCompanyForAccountModal.id}
+              initialDateFilter={getMappedInitialDateFilter()}
+            />
           </div>
         </div>
       )}

@@ -38,9 +38,10 @@ import { createClient } from '@/lib/supabase/client';
 
 interface CompanyAccountTabProps {
   companyId: string;
+  initialDateFilter?: 'all' | 'today' | 'week' | 'month';
 }
 
-export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps) {
+export default function CompanyAccountTab({ companyId, initialDateFilter = 'all' }: CompanyAccountTabProps) {
   const [summary, setSummary] = useState<CompanyAccountSummary | null>(null);
   const [movements, setMovements] = useState<CompanyMovement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +55,7 @@ export default function CompanyAccountTab({ companyId }: CompanyAccountTabProps)
   });
 
   // Date Filter
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>(initialDateFilter);
 
   // Modals
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
