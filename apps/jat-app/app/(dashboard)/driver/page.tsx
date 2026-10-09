@@ -48,6 +48,7 @@ export default function DriverPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('Efectivo');
   const [isTicketEligible, setIsTicketEligible] = useState<boolean>(true);
   const [isSubmittingCompletion, setIsSubmittingCompletion] = useState<boolean>(false);
+  const [isRealtimeSubscribed, setIsRealtimeSubscribed] = useState<boolean>(false);
 
   const loadDriverData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -68,19 +69,45 @@ export default function DriverPage() {
 
       setDriver(drv);
 
-      // Load today's cash summary and rides
-      const [sumRes, ridesRes] = await Promise.all([
+      const supabase = createClient();
+
+      // Load today's cash summary and ONLY active rides assigned to THIS driver
+      const [sumRes, activeRidesRes] = await Promise.all([
         getDriverCashSummary(drv.id),
-        getRides(),
+        supabase
+          .from('rides')
+          .select(`
+            *,
+            driver:drivers (
+              id,
+              movil_number,
+              vehicle_type,
+              vehicle_plate,
+              profile:profiles (
+                full_name,
+                phone
+              )
+            ),
+            customer:customers (
+              id,
+              full_name,
+              phone
+            ),
+            company:companies (
+              id,
+              business_name
+            )
+          `)
+          .eq('driver_id', drv.id)
+          .in('status', ['assigned', 'ontheway'])
+          .order('created_at', { ascending: true }),
       ]);
 
       if (sumRes.summary) setCashSummary(sumRes.summary);
 
-      if (ridesRes.data) {
-        // STRICT FILTERING: Only rides assigned to THIS authenticated driver that are assigned or ontheway
-        const myActiveRides = ridesRes.data
-          .filter((r) => r.driver_id === drv.id && (r.status === 'assigned' || r.status === 'ontheway'))
-          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); // Ascending by assignment/created_at
+      if (activeRidesRes.data) {
+        const myActiveRides = (activeRidesRes.data as unknown as RideWithDetails[])
+          .sort((a, b) => new Date(a.created_at || Date.now()).getTime() - new Date(b.created_at || Date.now()).getTime());
 
         setAssignedRidesQueue(myActiveRides);
       }
@@ -169,14 +196,15 @@ export default function DriverPage() {
     }
   }, [driver, handleRealtimePayload]);
 
-  // Initial load & silent 10s polling fallback for driver panel
+  // Adaptive Polling Ticker as fallback for WebSockets (60s when connected, 10s emergency when disconnected)
   useEffect(() => {
     loadDriverData();
+    const intervalMs = isRealtimeSubscribed ? 60000 : 10000;
     const pollInterval = setInterval(() => {
       loadDriverData(true);
-    }, 10000);
+    }, intervalMs);
     return () => clearInterval(pollInterval);
-  }, [loadDriverData]);
+  }, [loadDriverData, isRealtimeSubscribed]);
 
   // Standalone Realtime subscription & reconnection handler
   useEffect(() => {
@@ -202,7 +230,11 @@ export default function DriverPage() {
       );
 
     channel.subscribe((status) => {
-      if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+      if (status === 'SUBSCRIBED') {
+        setIsRealtimeSubscribed(true);
+        loadDriverData(true);
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        setIsRealtimeSubscribed(false);
         console.warn('[Realtime Driver] Channel subscription issue:', status);
       }
     });

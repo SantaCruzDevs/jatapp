@@ -485,14 +485,17 @@ export default function OperationsPage() {
     }
   }, [searchQuery]);
 
-  // Initial Load & Silent 10s Polling Ticker as fallback for WebSockets
+  const [isRealtimeSubscribed, setIsRealtimeSubscribed] = useState<boolean>(false);
+
+  // Adaptive Polling Ticker as fallback for WebSockets (60s when connected, 10s emergency when disconnected)
   useEffect(() => {
     loadData();
+    const intervalMs = isRealtimeSubscribed ? 60000 : 10000;
     const pollInterval = setInterval(() => {
       loadData(true);
-    }, 10000);
+    }, intervalMs);
     return () => clearInterval(pollInterval);
-  }, [loadData]);
+  }, [loadData, isRealtimeSubscribed]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -577,7 +580,12 @@ export default function OperationsPage() {
       );
 
     channel.subscribe((status) => {
-      if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+      if (status === 'SUBSCRIBED') {
+        setIsRealtimeSubscribed(true);
+        loadSettings();
+        loadData(true);
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        setIsRealtimeSubscribed(false);
         console.warn('[Realtime Operations] Channel subscription issue:', status);
       }
     });
