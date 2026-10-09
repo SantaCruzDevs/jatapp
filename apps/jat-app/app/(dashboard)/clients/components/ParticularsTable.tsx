@@ -1,14 +1,12 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { CustomerWithCompany, normalizePhone } from '@/lib/services/customers';
 import { 
   Users, 
   Phone, 
   Mail, 
   Edit, 
-  Bike, 
   Loader2, 
   IdCard, 
   MapPin, 
@@ -144,7 +142,7 @@ export default function ParticularsTable({
 
                 {/* Acciones */}
                 <td className="py-3.5 px-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="flex items-center justify-end">
                     <button
                       onClick={() => onEdit(c)}
                       title="Editar cliente particular"
@@ -152,15 +150,6 @@ export default function ParticularsTable({
                     >
                       <Edit className="w-3.5 h-3.5" />
                     </button>
-
-                    <Link
-                      href={`/operations?customer_id=${c.id}`}
-                      title="Crear carrera para este cliente particular"
-                      className="px-2.5 py-1 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 rounded-lg transition-colors font-medium text-[11px] flex items-center gap-1"
-                    >
-                      <Bike className="w-3.5 h-3.5" />
-                      <span>Despachar</span>
-                    </Link>
                   </div>
                 </td>
               </tr>
